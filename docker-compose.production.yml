@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    image: smarthr-attendance:latest
+    restart: unless-stopped
+    env_file: .env.production
+    ports:
+      - "3000:3000"
+    volumes:
+      - attendance-storage:/app/storage
+
+volumes:
+  attendance-storage:

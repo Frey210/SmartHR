@@ -1,0 +1,28 @@
+Alur Pengguna (User Flow)
+Karyawan (Aplikasi Absensi)
+Otentikasi: Karyawan login menggunakan kredensial yang hanya bisa dibuat oleh Admin.
+
+Beranda: Menampilkan waktu saat ini secara real-time, status hari ini (Belum Absen / Sedang Bekerja / Sudah Selesai), dan riwayat singkat minggu ini.
+
+Proses Clock In:
+
+Karyawan menekan tombol "Clock In".
+
+Sistem meminta izin akses lokasi, mencatat koordinat (Latitude/Longitude), dan menandai waktu mulai kerja.
+
+Proses Clock Out & Pelaporan:
+
+Karyawan menekan tombol "Clock Out".
+
+Sistem kembali mencatat koordinat lokasi akhir.
+
+Muncul formulir wajib: Dokumentasi Pekerjaan. Karyawan dapat menekan tombol "Tambah Foto", mengambil gambar dari kamera/galeri, dan mengisi text box deskripsi untuk masing-masing foto.
+
+Setelah formulir disubmit, sistem mengkalkulasi durasi kerja hari itu dan menutup sesi absen.
+
+Admin (Dashboard Web)
+Manajemen Akun: Antarmuka CRUD (Create, Read, Update, Delete) untuk membuat akun karyawan (Nama, Email/Username, Kata Sandi, Posisi).
+
+Pemantauan Harian: Tabel pemantauan real-time yang menampilkan siapa saja yang sedang berstatus clock in, jam berapa mereka masuk, dan tautan ke Google Maps berdasarkan titik koordinat yang terekam.
+
+Rekapitulasi Kinerja: Halaman khusus untuk memfilter data per bulan dan per karyawan, lengkap dengan log foto pekerjaan.

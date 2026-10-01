@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.env
+storage/
+generated/
+prisma/*.db
+prisma/*.db-journal
+prisma/schema.postgresql.prisma
+.env.production
+backups/
+graphify-out/
+Gemini_Generated_Image_*.jpg
+mtc logo.jpg
+npm-debug.log*

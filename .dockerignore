@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.env*
+storage
+prisma/*.db*
+backups
+graphify-out
+*.jpg
+!public/*.jpg

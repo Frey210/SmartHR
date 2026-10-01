@@ -1,0 +1,43 @@
+{
+  "name": "mtc-attendance",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "node --test lib/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "node scripts/init-db.mjs",
+    "db:seed": "node --experimental-strip-types prisma/seed.ts",
+    "db:prepare:postgres": "node scripts/prepare-postgres-schema.mjs",
+    "db:generate:postgres": "npm run db:prepare:postgres && prisma generate --schema prisma/schema.postgresql.prisma",
+    "db:migrate:postgres": "node scripts/migrate-postgres.mjs"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "latest",
+    "@prisma/adapter-better-sqlite3": "7.10.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "7.10.0",
+    "better-sqlite3": "latest",
+    "next": "16.3.8",
+    "pg": "^8.23.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/better-sqlite3": "latest",
+    "@types/node": "latest",
+    "@types/pg": "^8.23.1",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "16.3.8",
+    "prisma": "7.10.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "latest"
+  }
+}

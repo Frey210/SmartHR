@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String              @id @default(cuid())
+  username     String              @unique
+  passwordHash String
+  name         String
+  position     String
+  role         String              @default("EMPLOYEE")
+  isActive     Boolean             @default(true)
+  sessions     AuthSession[]
+  attendances  AttendanceSession[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AttendanceLocation {
+  id          String              @id @default(cuid())
+  name        String
+  latitude    Float
+  longitude   Float
+  radiusM     Int                 @default(50)
+  isActive    Boolean             @default(true)
+  attendances AttendanceSession[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model AttendanceSession {
+  id                 String              @id @default(cuid())
+  employeeId         String
+  employee           User                @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  locationId         String?
+  location           AttendanceLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  businessDate       String
+  status             String              @default("OPEN")
+  clockInAt          DateTime
+  clockOutAt         DateTime?
+  clockInLatitude    Float
+  clockInLongitude   Float
+  clockInAccuracyM   Float?
+  clockInDistanceM   Float
+  clockOutLatitude   Float?
+  clockOutLongitude  Float?
+  clockOutAccuracyM  Float?
+  clockOutDistanceM  Float?
+  clockOutSource     String?
+  durationMinutes    Int?
+  evidences          WorkEvidence[]
+  correctionRequests ClockOutRequest[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([employeeId, businessDate])
+  @@index([status])
+}
+
+model WorkEvidence {
+  id                  String            @id @default(cuid())
+  attendanceSessionId String
+  attendanceSession   AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+  objectKey           String
+  originalFilename    String
+  mimeType            String
+  sizeBytes           Int
+  description         String
+  deletedAt           DateTime?
+  deletedBy           String?
+  createdAt           DateTime          @default(now())
+
+  @@index([attendanceSessionId])
+}
+
+model ClockOutRequest {
+  id                       String            @id @default(cuid())
+  attendanceSessionId      String
+  attendanceSession        AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+  requestedClockOutAt      DateTime
+  requestLocationLatitude  Float?
+  requestLocationLongitude Float?
+  reason                   String
+  status                   String            @default("PENDING")
+  reviewedBy               String?
+  reviewedAt               DateTime?
+  reviewNote               String?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  @@index([status])
+  @@index([attendanceSessionId])
+}
+
+model AppSetting {
+  id        Int      @id @default(1)
+  timezone  String   @default("Asia/Singapore")
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
