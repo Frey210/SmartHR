@@ -6,7 +6,7 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       MTC_DATABASE_URL: file:./prisma/dev.db
       SESSION_COOKIE_SECURE: "false"
