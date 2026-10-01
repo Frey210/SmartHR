@@ -14,6 +14,7 @@
   --warning: #b45309;
   --radius-card: 16px;
   --radius-control: 10px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 * {
@@ -27,8 +28,20 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--canvas);
+  background:
+    radial-gradient(circle at 8% -10%, rgb(26 130 255 / 0.08), transparent 24rem),
+    var(--canvas);
   color: var(--text);
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 button,
@@ -55,7 +68,7 @@ select {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
-  box-shadow: 0 14px 40px rgb(43 60 90 / 0.07);
+  box-shadow: 0 10px 32px rgb(43 60 90 / 0.06);
 }
 
 .field {
@@ -87,7 +100,13 @@ select {
   border-radius: var(--radius-control);
   padding: 0 18px;
   font-weight: 700;
-  transition: background 180ms ease, border-color 180ms ease, opacity 180ms ease;
+  transition: transform 140ms var(--ease-out), background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.button-primary:active,
+.button-secondary:active,
+.button-danger:active {
+  transform: scale(0.97);
 }
 
 .button-primary {
@@ -96,20 +115,10 @@ select {
   color: white;
 }
 
-.button-primary:hover {
-  border-color: var(--brand-strong);
-  background: var(--brand-strong);
-}
-
 .button-secondary {
   border: 1px solid #bac7d6;
   background: white;
   color: var(--slate);
-}
-
-.button-secondary:hover {
-  border-color: var(--slate);
-  background: #f8fafc;
 }
 
 .button-danger {
@@ -121,6 +130,56 @@ select {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.52;
+}
+
+.location-map {
+  z-index: 0;
+  min-height: 18rem;
+  width: 100%;
+  background: #e8eef4;
+}
+
+.location-map--selectable {
+  cursor: crosshair;
+}
+
+.location-map .leaflet-control-zoom a {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: var(--slate);
+}
+
+.location-map .leaflet-control-attribution {
+  font-size: 10px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .button-primary:hover {
+    border-color: var(--brand-strong);
+    background: var(--brand-strong);
+    box-shadow: 0 8px 22px rgb(26 130 255 / 0.2);
+  }
+
+  .button-secondary:hover {
+    border-color: var(--slate);
+    background: #f8fafc;
+  }
+
+  .button-danger:hover {
+    background: #a8242b;
+  }
+}
+
+@media (max-width: 639px) {
+  .surface {
+    border-radius: 14px;
+  }
+
+  .location-map {
+    min-height: 16rem;
+  }
 }
 
 .number {

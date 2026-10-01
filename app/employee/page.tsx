@@ -1,5 +1,6 @@
 import { Clock, MapPin, Timer } from "@phosphor-icons/react/dist/ssr";
 import { AppHeader } from "@/app/_components/app-header";
+import { EmployeeLocationPreview } from "@/app/_components/location-map";
 import { requireUser } from "@/lib/auth";
 import { businessDate, dateTimeLocalValue, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
@@ -10,13 +11,13 @@ export default async function EmployeePage() {
   const settings = await db.appSetting.findUnique({ where: { id: 1 } });
   const timezone = settings?.timezone ?? "Asia/Singapore";
   const today = businessDate(timezone);
-  const [sessions, locationCount] = await Promise.all([
+  const [sessions, locations] = await Promise.all([
     db.attendanceSession.findMany({
       where: { employeeId: user.id, businessDate: today },
       include: { location: true },
       orderBy: { clockInAt: "desc" },
     }),
-    db.attendanceLocation.count({ where: { isActive: true } }),
+    db.attendanceLocation.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
   ]);
   const active = sessions.find((session) => session.status === "OPEN");
   const totalMinutes = sessions.reduce((total, session) => total + (session.durationMinutes ?? 0), 0);
@@ -38,7 +39,7 @@ export default async function EmployeePage() {
                 {active ? "Sedang bekerja" : sessions.length ? "Tidak ada sesi aktif" : "Belum ada sesi"}
               </p>
             </div>
-            <AttendanceControl hasOpenSession={Boolean(active)} hasLocations={locationCount > 0} />
+            <AttendanceControl hasOpenSession={Boolean(active)} hasLocations={locations.length > 0} />
             {active ? (
               <p className="rounded-xl bg-white/10 px-4 py-3 text-sm leading-6 text-slate-100">
                 Sesi dimulai {formatDateTime(active.clockInAt, timezone)}. Clock out memerlukan lokasi, deskripsi pekerjaan, dan minimal satu foto.
@@ -48,6 +49,7 @@ export default async function EmployeePage() {
         </section>
 
         <section className="grid content-start gap-6">
+          {locations.length ? <EmployeeLocationPreview locations={locations} /> : null}
           <div className="grid grid-cols-2 gap-4">
             <div className="surface p-5">
               <Timer size={24} className="text-[#1A82FF]" aria-hidden="true" />

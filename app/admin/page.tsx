@@ -2,6 +2,7 @@ import { Clock, FileImage, MapPin, Timer, UsersThree } from "@phosphor-icons/rea
 import Link from "next/link";
 import { AppHeader } from "@/app/_components/app-header";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
+import { LocationMap } from "@/app/_components/location-map";
 import { requireUser } from "@/lib/auth";
 import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
@@ -113,7 +114,7 @@ export default async function AdminPage() {
           <aside className="surface p-5 sm:p-6">
             <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Tambah lokasi absensi</h2>
             <p className="mb-6 mt-2 text-sm leading-6 text-slate-500">Karyawan dapat clock in dari lokasi aktif terdekat dalam radius 50 meter.</p>
-            <LocationForm />
+            <LocationForm locations={locations.map(({ id, name, latitude, longitude, radiusM, isActive }) => ({ id, name, latitude, longitude, radiusM, isActive }))} />
           </aside>
         </section>
 
@@ -151,7 +152,7 @@ export default async function AdminPage() {
                   <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-bold ${employee.isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{employee.isActive ? "Aktif" : "Nonaktif"}</span>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-[minmax(150px,1fr)_auto]">
-                  <form action={resetEmployeePasswordAction} className="flex gap-2">
+                  <form action={resetEmployeePasswordAction} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <input type="hidden" name="userId" value={employee.id} />
                     <input name="password" type="password" required minLength={8} maxLength={128} autoComplete="new-password" className="field min-w-0" placeholder="Password baru" aria-label={`Password baru untuk ${employee.name}`} />
                     <ConfirmSubmit className="button-secondary shrink-0" message={`Reset password ${employee.name}?`}>Reset</ConfirmSubmit>
@@ -183,7 +184,9 @@ export default async function AdminPage() {
             <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Lokasi absensi</h2>
           </div>
           {locations.length ? (
-            <div className="grid gap-px bg-slate-100 sm:grid-cols-2 xl:grid-cols-3">
+            <>
+            <LocationMap locations={locations.map(({ id, name, latitude, longitude, radiusM, isActive }) => ({ id, name, latitude, longitude, radiusM, isActive }))} label="Peta seluruh lokasi absensi" />
+            <div className="grid gap-px border-t border-slate-100 bg-slate-100 sm:grid-cols-2 xl:grid-cols-3">
               {locations.map((location) => (
                 <article key={location.id} className="bg-white p-5">
                   <div className="flex items-start justify-between gap-4">
@@ -201,6 +204,7 @@ export default async function AdminPage() {
                 </article>
               ))}
             </div>
+            </>
           ) : (
             <p className="px-6 py-10 text-center text-sm text-slate-500">Belum ada lokasi. Tambahkan lokasi pertama melalui formulir di atas.</p>
           )}

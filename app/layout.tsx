@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Roboto } from "next/font/google";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 const heading = Poppins({
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
   title: "MTC Attendance",
   description: "Pencatatan kehadiran dan dokumentasi kerja PT Media Teknologi Celebes",
   applicationName: "MTC Attendance",
+  icons: { icon: "/mtc-logo.jpg", apple: "/mtc-logo.jpg" },
   appleWebApp: { capable: true, title: "MTC Attendance", statusBarStyle: "default" },
 };
 

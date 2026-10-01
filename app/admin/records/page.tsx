@@ -43,7 +43,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
         <button className="button-primary">Tampilkan</button>
       </form>
 
-      <section className="grid grid-cols-3 gap-4" aria-label="Ringkasan rekap">
+      <section className="grid gap-4 min-[420px]:grid-cols-3" aria-label="Ringkasan rekap">
         <article className="surface p-5"><CalendarBlank size={22} className="text-[#1A82FF]" aria-hidden="true" /><p className="mt-4 text-sm text-slate-500">Jumlah sesi</p><p className="number mt-1 text-2xl font-bold text-[#2B3C5A]">{sessions.length}</p></article>
         <article className="surface p-5"><UsersThree size={22} className="text-[#1A82FF]" aria-hidden="true" /><p className="mt-4 text-sm text-slate-500">Karyawan</p><p className="number mt-1 text-2xl font-bold text-[#2B3C5A]">{uniqueEmployees}</p></article>
         <article className="surface p-5"><Clock size={22} className="text-[#1A82FF]" aria-hidden="true" /><p className="mt-4 text-sm text-slate-500">Total waktu</p><p className="number mt-1 text-2xl font-bold text-[#2B3C5A]">{formatMinutes(totalMinutes)}</p></article>

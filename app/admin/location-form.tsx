@@ -1,16 +1,27 @@
 "use client";
 
 import { Crosshair, MapPin, Plus } from "@phosphor-icons/react";
-import { useActionState, useState } from "react";
+import { useActionState, useCallback, useMemo, useState } from "react";
+import { LocationMap, type MapLocation } from "@/app/_components/location-map";
 import { addLocationAction, type LocationState } from "./actions";
 
 const initialState: LocationState = { ok: false, message: "" };
 
-export function LocationForm() {
+export function LocationForm({ locations }: { locations: MapLocation[] }) {
   const [state, action, pending] = useActionState(addLocationAction, initialState);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [geoError, setGeoError] = useState("");
+  const selected = useMemo(() => {
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    return Number.isFinite(lat) && Number.isFinite(lng) && latitude && longitude ? { latitude: lat, longitude: lng } : undefined;
+  }, [latitude, longitude]);
+
+  const selectOnMap = useCallback((lat: number, lng: number) => {
+    setLatitude(lat.toFixed(7));
+    setLongitude(lng.toFixed(7));
+  }, []);
 
   function useCurrentLocation() {
     setGeoError("");
@@ -46,6 +57,11 @@ export function LocationForm() {
       <button type="button" className="button-secondary w-full" onClick={useCurrentLocation}>
         <Crosshair size={20} weight="bold" aria-hidden="true" /> Gunakan lokasi perangkat
       </button>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200">
+        <LocationMap locations={locations} selected={selected} onSelect={selectOnMap} label="Pilih titik lokasi absensi" />
+        <p className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">Klik peta untuk memilih titik. Lingkaran hijau menunjukkan radius 50 meter lokasi baru.</p>
+      </div>
 
       {geoError ? <p className="text-sm font-medium text-red-700" role="alert">{geoError}</p> : null}
       {state.message ? (
