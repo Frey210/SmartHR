@@ -119,11 +119,15 @@ export default async function AdminPage() {
           </aside>
         </section>
 
-        {requests.length ? <section className="surface overflow-hidden">
-          <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
-            <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Persetujuan koreksi absensi</h2>
+        <section id="attendance-approvals" className="surface scroll-mt-6 overflow-hidden">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
+            <div>
+              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Persetujuan koreksi absensi</h2>
+              <p className="mt-1 text-sm text-slate-500">Tinjau pengajuan lupa clock in atau clock out.</p>
+            </div>
+            <span className="number rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-[#0868D7]">{requests.length}</span>
           </div>
-          <div className="divide-y divide-slate-100">
+          {requests.length ? <div className="divide-y divide-slate-100">
             {requests.map((request) => <article key={request.id} className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
                 <p className="font-bold text-slate-900">{request.attendanceSession.employee.name}</p>
@@ -139,8 +143,11 @@ export default async function AdminPage() {
                 <button name="decision" value="APPROVED" className="button-primary">Setujui</button>
               </form>
             </article>)}
-          </div>
-        </section> : null}
+          </div> : <div className="px-6 py-12 text-center">
+            <p className="font-bold text-slate-700">Belum ada koreksi yang menunggu</p>
+            <p className="mt-1 text-sm text-slate-500">Pengajuan karyawan akan muncul di bagian ini.</p>
+          </div>}
+        </section>
 
         <section className="grid gap-6 xl:grid-cols-[1fr_0.7fr]">
           <div className="surface overflow-hidden">

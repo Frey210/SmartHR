@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ClockCounterClockwise, ListMagnifyingGlass, ShieldCheck, SignOut, UserCircle } from "@phosphor-icons/react/dist/ssr";
+import { CheckSquareOffset, ClockCounterClockwise, ListMagnifyingGlass, ShieldCheck, SignOut, UserCircle } from "@phosphor-icons/react/dist/ssr";
 import { logoutAction } from "@/app/actions";
 
 type AppHeaderProps = {
@@ -27,7 +27,7 @@ export function AppHeader({ name, position, role }: AppHeaderProps) {
             <p className="text-sm font-bold text-slate-800">{name}</p>
             <p className="text-xs text-slate-500">{position}</p>
         </div>
-        <nav className={`order-3 grid w-full gap-2 lg:order-none lg:flex lg:w-auto ${role === "ADMIN" ? "grid-cols-4" : "grid-cols-3"}`} aria-label="Navigasi akun">
+        <nav className={`order-3 grid w-full gap-2 lg:order-none lg:flex lg:w-auto ${role === "ADMIN" ? "grid-cols-3 sm:grid-cols-5" : "grid-cols-3"}`} aria-label="Navigasi akun">
           {role === "ADMIN" ? <Link href="/admin/records" className="button-secondary px-3" aria-label="Buka rekap absensi">
             <ListMagnifyingGlass size={20} weight="bold" aria-hidden="true" />
             <span className="text-xs sm:text-sm">Rekap</span>
@@ -38,6 +38,10 @@ export function AppHeader({ name, position, role }: AppHeaderProps) {
           {role === "ADMIN" ? <Link href="/admin/audit" className="button-secondary px-3" aria-label="Buka audit log">
             <ShieldCheck size={20} weight="bold" aria-hidden="true" />
             <span className="text-xs sm:text-sm">Audit</span>
+          </Link> : null}
+          {role === "ADMIN" ? <Link href="/admin#attendance-approvals" className="button-secondary px-3" aria-label="Buka persetujuan koreksi absensi">
+            <CheckSquareOffset size={20} weight="bold" aria-hidden="true" />
+            <span className="text-xs sm:text-sm">Koreksi</span>
           </Link> : null}
           <Link href="/profile" className="button-secondary px-3" aria-label="Buka profil dan ubah password">
             <UserCircle size={20} weight="bold" aria-hidden="true" />
