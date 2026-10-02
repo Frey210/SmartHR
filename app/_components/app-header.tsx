@@ -14,8 +14,8 @@ export function AppHeader({ name, position, role }: AppHeaderProps) {
   const home = role === "ADMIN" ? "/admin" : "/employee";
 
   return <>
-    <header className={`sticky top-0 z-40 border-b backdrop-blur-sm ${role === "EMPLOYEE" ? "border-white/10 bg-[#2B3C5A] pt-[env(safe-area-inset-top)] shadow-[0_8px_24px_rgba(25,38,61,0.18)] lg:border-slate-200/80 lg:bg-white lg:pt-0 lg:shadow-none" : "border-slate-200/80 bg-white/95"}`}>
-      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:flex-nowrap lg:px-8">
+    <header className={`sticky top-0 z-40 border-b backdrop-blur-sm ${role === "EMPLOYEE" ? "employee-app-header border-transparent pt-[env(safe-area-inset-top)] lg:border-slate-200/80 lg:bg-white lg:pt-0 lg:shadow-none" : "border-slate-200/80 bg-white/95"}`}>
+      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-3 px-4 py-4 sm:px-6 lg:flex-nowrap lg:px-8 lg:py-3">
         <Link href={home} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-offset-4">
           <Image src="/mtc-logo.jpg" width={42} height={42} alt="Logo MTC" className="shrink-0 rounded-lg ring-1 ring-white/20" />
           <div>
@@ -29,7 +29,7 @@ export function AppHeader({ name, position, role }: AppHeaderProps) {
             <p className="text-xs text-slate-500">{position}</p>
         </div>
         {role === "EMPLOYEE" ? <form action={logoutAction} className="lg:hidden">
-          <button type="submit" className="flex size-11 cursor-pointer items-center justify-center rounded-xl text-white transition-colors hover:bg-white/10" aria-label="Keluar dari akun">
+          <button type="submit" className="employee-header-action flex size-11 cursor-pointer items-center justify-center rounded-xl text-white" aria-label="Keluar dari akun">
             <SignOut size={22} weight="bold" aria-hidden="true" />
           </button>
         </form> : null}

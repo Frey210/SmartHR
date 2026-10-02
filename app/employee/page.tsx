@@ -28,8 +28,8 @@ export default async function EmployeePage() {
   const staleOpen = unresolved.some((session) => session.status === "OPEN" && session.businessDate !== today);
   const totalMinutes = sessions.reduce((total, session) => total + (session.durationMinutes ?? 0), 0);
 
-  return <main id="main-content" className="mx-auto grid max-w-5xl gap-5 px-4 py-5 pb-28 sm:px-6 lg:gap-6 lg:px-8 lg:py-10">
-    <section className="overflow-hidden rounded-[22px] bg-[#2B3C5A] text-white shadow-[0_18px_48px_rgba(43,60,90,0.2)]">
+  return <main id="main-content" className="mx-auto grid max-w-5xl gap-5 px-4 py-5 pb-32 sm:px-6 lg:gap-6 lg:px-8 lg:py-10">
+    <section className="employee-home-hero overflow-hidden rounded-[26px] text-white">
       <div className="grid gap-6 px-5 py-6 sm:grid-cols-[1fr_auto] sm:items-end sm:px-7 sm:py-7">
         <div>
           <p className="text-sm font-medium text-blue-200">Selamat bekerja</p>
@@ -42,7 +42,7 @@ export default async function EmployeePage() {
           <span className={`size-2.5 rounded-full ${active ? "bg-emerald-400" : staleOpen ? "bg-amber-400" : "bg-slate-400"}`} aria-hidden="true" />
           {active ? "Sesi sedang berjalan" : staleOpen ? "Sesi lama perlu dikoreksi" : "Tidak ada sesi aktif"}
         </div>
-        <Link href="/employee/attendance" className="mt-4 flex min-h-14 w-full items-center justify-between rounded-xl bg-white px-4 font-bold text-[#2B3C5A] shadow-sm transition-colors hover:bg-blue-50">
+        <Link href="/employee/attendance" className="employee-hero-action mt-4 flex min-h-14 w-full items-center justify-between rounded-full bg-white px-5 font-bold text-[#2B3C5A]">
           <span>{active ? "Lanjutkan ke clock out" : "Mulai absensi"}</span>
           <ArrowRight size={21} weight="bold" aria-hidden="true" />
         </Link>
@@ -53,12 +53,12 @@ export default async function EmployeePage() {
     <section aria-labelledby="quick-actions-title">
       <h2 id="quick-actions-title" className="mb-3 font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Akses cepat</h2>
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/employee/attendance" className="surface flex min-h-28 flex-col justify-between p-4 transition-colors hover:border-blue-300 hover:bg-blue-50/50">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-[#0868D7]"><MapPin size={22} weight="fill" aria-hidden="true" /></span>
+        <Link href="/employee/attendance" className="surface employee-action-card flex min-h-28 flex-col justify-between p-4">
+          <span className="employee-action-icon flex size-11 items-center justify-center rounded-xl bg-blue-50 text-[#0868D7]"><MapPin size={23} weight="fill" aria-hidden="true" /></span>
           <span className="font-bold text-slate-800">Absensi</span>
         </Link>
-        <Link href="/employee/correction" className="surface relative flex min-h-28 flex-col justify-between p-4 transition-colors hover:border-blue-300 hover:bg-blue-50/50">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-slate-100 text-[#2B3C5A]"><NotePencil size={22} weight="bold" aria-hidden="true" /></span>
+        <Link href="/employee/correction" className="surface employee-action-card relative flex min-h-28 flex-col justify-between p-4">
+          <span className="employee-action-icon flex size-11 items-center justify-center rounded-xl bg-slate-100 text-[#2B3C5A]"><NotePencil size={23} weight="bold" aria-hidden="true" /></span>
           <span className="font-bold text-slate-800">Koreksi absen</span>
           {pendingCorrections ? <span className="absolute right-3 top-3 flex min-w-6 justify-center rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-900" aria-label={`${pendingCorrections} koreksi menunggu`}>{pendingCorrections}</span> : null}
         </Link>

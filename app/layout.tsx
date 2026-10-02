@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Roboto } from "next/font/google";
+import { AppSplash } from "@/app/_components/app-splash";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
@@ -25,12 +26,13 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "MTC Attendance", statusBarStyle: "black-translucent" },
 };
 
-export const viewport: Viewport = { themeColor: "#2B3C5A" };
+export const viewport: Viewport = { themeColor: "#248FDC" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
       <body className={`${heading.variable} ${body.variable} font-[family-name:var(--font-body)] antialiased`}>
+        <AppSplash />
         {children}
       </body>
     </html>

@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Pencatatan kehadiran dan dokumentasi kerja PT Media Teknologi Celebes",
     start_url: "/",
     display: "standalone",
-    background_color: "#F4F7F9",
-    theme_color: "#2B3C5A",
+    background_color: "#2999DE",
+    theme_color: "#248FDC",
     icons: [{ src: "/mtc-logo.jpg", sizes: "any", type: "image/jpeg" }],
   };
 }
