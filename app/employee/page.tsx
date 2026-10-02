@@ -1,6 +1,7 @@
 import { Clock, MapPin, Timer } from "@phosphor-icons/react/dist/ssr";
 import { AppHeader } from "@/app/_components/app-header";
 import { EmployeeLocationPreview } from "@/app/_components/location-map";
+import { LiveServerClock } from "@/app/_components/live-server-clock";
 import { requireUser } from "@/lib/auth";
 import { businessDate, dateTimeLocalValue, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
@@ -27,9 +28,12 @@ export default async function EmployeePage() {
       <AppHeader name={user.name} position={user.position} role="EMPLOYEE" />
       <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-10">
         <section className="overflow-hidden rounded-[20px] bg-[#2B3C5A] text-white shadow-[0_20px_60px_rgba(43,60,90,0.18)]">
-          <div className="border-b border-white/10 px-5 py-5 sm:px-7">
-            <p className="text-sm font-medium text-blue-200">{new Intl.DateTimeFormat("id-ID", { timeZone: timezone, dateStyle: "full" }).format(new Date())}</p>
-            <h1 className="mt-2 font-[family-name:var(--font-heading)] text-3xl font-bold tracking-[-0.025em]">Halo, {user.name.split(" ")[0]}</h1>
+          <div className="grid gap-6 border-b border-white/10 px-5 py-6 sm:grid-cols-[1fr_auto] sm:items-end sm:px-7">
+            <div>
+              <p className="text-sm font-medium text-blue-200">Selamat bekerja</p>
+              <h1 className="mt-2 font-[family-name:var(--font-heading)] text-3xl font-bold tracking-[-0.025em]">Halo, {user.name.split(" ")[0]}</h1>
+            </div>
+            <LiveServerClock serverNow={new Date().getTime()} timeZone={timezone} />
           </div>
           <div className="grid gap-6 px-5 py-6 sm:px-7">
             <div>
