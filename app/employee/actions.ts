@@ -109,6 +109,7 @@ export async function clockInAction(input: ClockInInput): Promise<AttendanceActi
   }
 
   revalidatePath("/employee");
+  revalidatePath("/employee/attendance");
   revalidatePath("/admin");
   return { ok: true, message: `Clock in berhasil di ${nearest.location.name}.` };
 }
@@ -167,6 +168,7 @@ export async function clockOutAction(formData: FormData): Promise<AttendanceActi
   }
 
   revalidatePath("/employee");
+  revalidatePath("/employee/attendance");
   revalidatePath("/admin");
   return { ok: true, message: "Clock out dan dokumentasi berhasil disimpan." };
 }
@@ -222,6 +224,7 @@ export async function requestAttendanceCorrectionAction(formData: FormData): Pro
     return { ok: false, message: "Permintaan belum tersimpan. Silakan coba lagi." };
   }
   revalidatePath("/employee");
+  revalidatePath("/employee/correction");
   revalidatePath("/admin");
   return { ok: true, message: "Koreksi absensi dikirim dan menunggu persetujuan admin." };
 }

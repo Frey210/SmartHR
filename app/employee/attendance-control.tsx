@@ -2,6 +2,7 @@
 
 import { Camera, Crosshair, MapPin, SpinnerGap, Trash, UploadSimple } from "@phosphor-icons/react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction, useEffect, useRef, useState, useTransition } from "react";
 import { clockInAction, clockOutAction, requestAttendanceCorrectionAction, type AttendanceActionResult } from "./actions";
 
@@ -19,13 +20,10 @@ async function compressImage(file: File) {
 
 type EvidenceDraft = { id: string; file: File; previewUrl: string; description: string };
 
-function EvidencePicker({ items, setItems, dark = false }: { items: EvidenceDraft[]; setItems: Dispatch<SetStateAction<EvidenceDraft[]>>; dark?: boolean }) {
+function EvidencePicker({ items, setItems }: { items: EvidenceDraft[]; setItems: Dispatch<SetStateAction<EvidenceDraft[]>> }) {
   const itemsRef = useRef(items);
   useEffect(() => { itemsRef.current = items; }, [items]);
   useEffect(() => () => itemsRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl)), []);
-  const buttonClass = dark
-    ? "border-white/30 bg-white/10 text-white hover:bg-white/15"
-    : "border-slate-300 bg-white text-slate-700 hover:border-slate-500 hover:bg-slate-50";
   function addFiles(event: ChangeEvent<HTMLInputElement>) {
     const files = [...(event.currentTarget.files ?? [])];
     setItems((current) => [...current, ...files.map((file) => ({ id: crypto.randomUUID(), file, previewUrl: URL.createObjectURL(file), description: "" }))]);
@@ -39,32 +37,32 @@ function EvidencePicker({ items, setItems, dark = false }: { items: EvidenceDraf
   }
   return (
     <fieldset className="grid gap-3">
-      <legend className={`text-sm font-bold ${dark ? "text-white" : "text-slate-700"}`}>Dokumentasi pekerjaan</legend>
+      <legend className="text-sm font-bold text-slate-700">Dokumentasi pekerjaan</legend>
       <div className="grid grid-cols-2 gap-2">
-        <label className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[10px] border px-3 text-sm font-bold transition-colors ${buttonClass}`}>
+        <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-slate-300 bg-white px-3 text-sm font-bold text-slate-700 transition-colors hover:border-slate-500 hover:bg-slate-50">
           <Camera size={20} aria-hidden="true" /> Kamera
           <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={addFiles} className="sr-only" />
         </label>
-        <label className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[10px] border px-3 text-sm font-bold transition-colors ${buttonClass}`}>
+        <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-slate-300 bg-white px-3 text-sm font-bold text-slate-700 transition-colors hover:border-slate-500 hover:bg-slate-50">
           <UploadSimple size={20} aria-hidden="true" /> Galeri / file
           <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={addFiles} className="sr-only" />
         </label>
       </div>
-      <p className={`text-xs leading-5 ${dark ? "text-slate-300" : "text-slate-500"}`}>Setiap foto memiliki deskripsi sendiri. Tambahkan minimal satu foto.</p>
+      <p className="text-xs leading-5 text-slate-500">Setiap foto memiliki deskripsi sendiri. Tambahkan minimal satu foto.</p>
       {items.length ? <div className="grid gap-3">
-        {items.map((item, index) => <article key={item.id} className={`grid gap-3 rounded-xl border p-3 sm:grid-cols-[88px_1fr] ${dark ? "border-white/15 bg-white/10" : "border-slate-200 bg-slate-50"}`}>
+        {items.map((item, index) => <article key={item.id} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[88px_1fr]">
           <Image src={item.previewUrl} alt={`Pratinjau foto ${index + 1}`} width={88} height={88} unoptimized className="size-[88px] rounded-lg object-cover" />
           <div className="min-w-0">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className={`text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>Foto {index + 1}</p>
-                <p className={`truncate text-xs ${dark ? "text-slate-300" : "text-slate-500"}`}>{item.file.name}</p>
+                <p className="text-sm font-bold text-slate-800">Foto {index + 1}</p>
+                <p className="truncate text-xs text-slate-500">{item.file.name}</p>
               </div>
-              <button type="button" onClick={() => remove(item.id)} className={`flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${dark ? "text-slate-200 hover:bg-white/10 hover:text-white" : "text-slate-500 hover:bg-red-50 hover:text-red-700"}`} aria-label={`Hapus foto ${index + 1}`}>
+              <button type="button" onClick={() => remove(item.id)} className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-red-50 hover:text-red-700" aria-label={`Hapus foto ${index + 1}`}>
                 <Trash size={20} aria-hidden="true" />
               </button>
             </div>
-            <label className={`mt-3 grid gap-1.5 text-sm font-bold ${dark ? "text-white" : "text-slate-700"}`}>
+            <label className="mt-3 grid gap-1.5 text-sm font-bold text-slate-700">
               Deskripsi foto {index + 1}
               <textarea required rows={2} value={item.description} onChange={(event) => setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, description: event.target.value } : entry))} className="field min-h-20 resize-y py-2 font-normal text-slate-900" placeholder="Jelaskan pekerjaan pada foto ini..." />
             </label>
@@ -89,6 +87,7 @@ async function appendEvidence(payload: FormData, items: EvidenceDraft[]) {
 }
 
 export function AttendanceControl({ hasOpenSession, hasLocations }: { hasOpenSession: boolean; hasLocations: boolean }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<AttendanceActionResult | null>(null);
   const [evidence, setEvidence] = useState<EvidenceDraft[]>([]);
@@ -109,7 +108,7 @@ export function AttendanceControl({ hasOpenSession, hasLocations }: { hasOpenSes
             accuracyM: position.coords.accuracy,
           });
           setResult(response);
-          if (response.ok) window.location.reload();
+          if (response.ok) router.refresh();
         });
       },
       (error) => {
@@ -138,7 +137,11 @@ export function AttendanceControl({ hasOpenSession, hasLocations }: { hasOpenSes
           await appendEvidence(payload, evidence);
           const response = await clockOutAction(payload);
           setResult(response);
-          if (response.ok) window.location.reload();
+          if (response.ok) {
+            evidence.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+            setEvidence([]);
+            router.refresh();
+          }
         } catch {
           setResult({ ok: false, message: "Foto gagal diproses. Coba gunakan foto lain." });
         }
@@ -157,12 +160,12 @@ export function AttendanceControl({ hasOpenSession, hasLocations }: { hasOpenSes
         disabled={pending || hasOpenSession || !hasLocations}
       >
         {pending ? <SpinnerGap size={22} className="animate-spin" aria-hidden="true" /> : <Crosshair size={22} weight="bold" aria-hidden="true" />}
-        {pending ? "Membaca lokasi..." : hasOpenSession ? "Sesi sedang aktif" : "Clock In"}
+        {pending ? "Membaca lokasi..." : hasOpenSession ? "Sesi sedang aktif" : "Konfirmasi clock in"}
       </button> : <form onSubmit={clockOut} className="grid gap-4">
-        <EvidencePicker items={evidence} setItems={setEvidence} dark />
+        <EvidencePicker items={evidence} setItems={setEvidence} />
         <button type="submit" className="button-primary min-h-14 w-full text-base" disabled={pending}>
           {pending ? <SpinnerGap size={22} className="animate-spin" aria-hidden="true" /> : null}
-          {pending ? "Memproses dokumentasi..." : "Clock Out"}
+          {pending ? "Memproses dokumentasi..." : "Konfirmasi clock out"}
         </button>
       </form>}
 

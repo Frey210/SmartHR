@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Roboto } from "next/font/google";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
@@ -22,8 +22,10 @@ export const metadata: Metadata = {
   description: "Pencatatan kehadiran dan dokumentasi kerja PT Media Teknologi Celebes",
   applicationName: "MTC Attendance",
   icons: { icon: "/mtc-logo.jpg", apple: "/mtc-logo.jpg" },
-  appleWebApp: { capable: true, title: "MTC Attendance", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "MTC Attendance", statusBarStyle: "black-translucent" },
 };
+
+export const viewport: Viewport = { themeColor: "#2B3C5A" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
