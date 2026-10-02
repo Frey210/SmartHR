@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "MTC Attendance", statusBarStyle: "black-translucent" },
 };
 
-export const viewport: Viewport = { themeColor: "#248FDC" };
+export const viewport: Viewport = { themeColor: "#198AFF" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

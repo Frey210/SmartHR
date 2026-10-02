@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+export const dynamic = "force-dynamic";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "MTC Attendance",
@@ -7,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Pencatatan kehadiran dan dokumentasi kerja PT Media Teknologi Celebes",
     start_url: "/",
     display: "standalone",
-    background_color: "#2999DE",
-    theme_color: "#248FDC",
-    icons: [{ src: "/mtc-logo.jpg", sizes: "any", type: "image/jpeg" }],
+    background_color: "#198AFF",
+    theme_color: "#198AFF",
+    icons: [{ src: "/mtc-logo.jpg", sizes: "640x640", type: "image/jpeg", purpose: "maskable" }],
   };
 }

@@ -33,7 +33,7 @@ export function AppSplash() {
   if (!visible) return null;
 
   return <div className={`app-splash ${closing ? "app-splash--closing" : ""}`} aria-hidden="true">
-    <video ref={videoRef} autoPlay muted playsInline preload="auto" poster="/card.png">
+    <video ref={videoRef} autoPlay muted playsInline preload="auto">
       <source src="/splash_screen.mp4" type="video/mp4" />
     </video>
   </div>;
