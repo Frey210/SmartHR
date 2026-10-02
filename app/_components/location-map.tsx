@@ -111,7 +111,9 @@ export function LocationMap({
         points.push(point);
       }
 
-      if (points.length === 1) map.setView(points[0], 18);
+      if (position) map.setView([position.latitude, position.longitude], 18);
+      else if (selected) map.setView([selected.latitude, selected.longitude], 18);
+      else if (points.length === 1) map.setView(points[0], 18);
       else if (points.length > 1) map.fitBounds(L.latLngBounds(points).pad(0.35), { maxZoom: 18 });
     }
     void draw();
@@ -123,7 +125,7 @@ export function LocationMap({
 
 export function EmployeeLocationPreview({ locations }: { locations: MapLocation[] }) {
   const [position, setPosition] = useState<Position>();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const nearest = useMemo(() => position ? locations
     .map((location) => ({ location, distanceM: distanceMeters(position, location) }))
@@ -149,6 +151,32 @@ export function EmployeeLocationPreview({ locations }: { locations: MapLocation[
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
     );
   }
+
+  useEffect(() => {
+    let active = true;
+    if (!navigator.geolocation) {
+      queueMicrotask(() => {
+        if (!active) return;
+        setLoading(false);
+        setError("Browser ini tidak mendukung akses lokasi.");
+      });
+      return () => { active = false; };
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (!active) return;
+        setPosition({ latitude: coords.latitude, longitude: coords.longitude, accuracyM: coords.accuracy });
+        setLoading(false);
+      },
+      () => {
+        if (!active) return;
+        setError("Lokasi tidak dapat dibaca. Aktifkan GPS dan izin lokasi lalu coba lagi.");
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
+    );
+    return () => { active = false; };
+  }, []);
 
   return (
     <section className="surface overflow-hidden">
