@@ -1,4 +1,4 @@
-import { Clock, FileImage, MapPin, Timer, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import { Clock, FileImage, MapPin, Timer, Trash, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { AppHeader } from "@/app/_components/app-header";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
@@ -10,7 +10,7 @@ import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
 import { LocationForm } from "./location-form";
 import { EmployeeForm, TimezoneForm } from "./admin-forms";
-import { deleteEvidenceAction, resetEmployeePasswordAction, reviewAttendanceRequestAction, toggleEmployeeAction, toggleLocationAction } from "./actions";
+import { deleteEvidenceAction, deleteLocationAction, resetEmployeePasswordAction, reviewAttendanceRequestAction, toggleEmployeeAction, toggleLocationAction } from "./actions";
 
 export default async function AdminPage() {
   const user = await requireUser("ADMIN");
@@ -209,10 +209,18 @@ export default async function AdminPage() {
                     <span className={`rounded-full px-3 py-1 text-xs font-bold ${location.isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{location.isActive ? "Aktif" : "Nonaktif"}</span>
                   </div>
                   <p className="mt-4 text-sm text-slate-600">Radius {location.radiusM} meter</p>
-                  <form action={toggleLocationAction} className="mt-4">
-                    <input type="hidden" name="locationId" value={location.id} />
-                    <button className="button-secondary w-full">{location.isActive ? "Nonaktifkan" : "Aktifkan"}</button>
-                  </form>
+                  <div className={`mt-4 grid gap-2 ${location.isActive ? "" : "grid-cols-2"}`}>
+                    <form action={toggleLocationAction}>
+                      <input type="hidden" name="locationId" value={location.id} />
+                      <button className="button-secondary w-full">{location.isActive ? "Nonaktifkan" : "Aktifkan"}</button>
+                    </form>
+                    {!location.isActive ? <form action={deleteLocationAction}>
+                      <input type="hidden" name="locationId" value={location.id} />
+                      <ConfirmSubmit className="button-danger w-full px-3" message={`Hapus titik ${location.name} secara permanen? Riwayat absensi tetap tersimpan.`}>
+                        <Trash size={18} aria-hidden="true" /> Hapus
+                      </ConfirmSubmit>
+                    </form> : null}
+                  </div>
                 </article>
               ))}
             </div>

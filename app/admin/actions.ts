@@ -129,6 +129,30 @@ export async function toggleLocationAction(formData: FormData) {
   revalidatePath("/employee");
 }
 
+export async function deleteLocationAction(formData: FormData) {
+  const admin = await requireUser("ADMIN");
+  const locationId = String(formData.get("locationId") ?? "");
+  const location = await db.attendanceLocation.findFirst({
+    where: { id: locationId, isActive: false },
+    select: { id: true, name: true, latitude: true, longitude: true },
+  });
+  if (!location) return;
+  await db.$transaction([
+    db.attendanceLocation.delete({ where: { id: location.id } }),
+    db.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "LOCATION_DELETED",
+        entityType: "AttendanceLocation",
+        entityId: location.id,
+        details: JSON.stringify({ name: location.name, latitude: location.latitude, longitude: location.longitude }),
+      },
+    }),
+  ]);
+  revalidatePath("/admin");
+  revalidatePath("/employee");
+}
+
 export async function deleteEvidenceAction(formData: FormData) {
   const admin = await requireUser("ADMIN");
   const evidenceId = String(formData.get("evidenceId") ?? "");
