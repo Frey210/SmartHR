@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS "WorkEvidence" (
 CREATE TABLE IF NOT EXISTS "ClockOutRequest" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "attendanceSessionId" TEXT NOT NULL,
+  "requestType" TEXT NOT NULL DEFAULT 'CLOCK_OUT',
+  "requestedClockInAt" DATETIME,
   "requestedClockOutAt" DATETIME NOT NULL,
   "requestLocationLatitude" REAL,
   "requestLocationLongitude" REAL,
@@ -111,5 +113,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS "one_open_attendance_per_employee" ON "Attenda
 CREATE INDEX IF NOT EXISTS "WorkEvidence_attendanceSessionId_idx" ON "WorkEvidence"("attendanceSessionId");
 CREATE INDEX IF NOT EXISTS "ClockOutRequest_status_idx" ON "ClockOutRequest"("status");
 CREATE INDEX IF NOT EXISTS "ClockOutRequest_attendanceSessionId_idx" ON "ClockOutRequest"("attendanceSessionId");
+CREATE UNIQUE INDEX IF NOT EXISTS "one_pending_correction_per_session" ON "ClockOutRequest"("attendanceSessionId") WHERE "status" = 'PENDING';
 CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
 CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action");

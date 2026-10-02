@@ -4,11 +4,12 @@ import { AppHeader } from "@/app/_components/app-header";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { LocationMap } from "@/app/_components/location-map";
 import { requireUser } from "@/lib/auth";
+import { attendanceStatusLabel } from "@/lib/attendance";
 import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
 import { LocationForm } from "./location-form";
 import { EmployeeForm, TimezoneForm } from "./admin-forms";
-import { deleteEvidenceAction, resetEmployeePasswordAction, reviewClockOutRequestAction, toggleEmployeeAction, toggleLocationAction } from "./actions";
+import { deleteEvidenceAction, resetEmployeePasswordAction, reviewAttendanceRequestAction, toggleEmployeeAction, toggleLocationAction } from "./actions";
 
 export default async function AdminPage() {
   const user = await requireUser("ADMIN");
@@ -91,10 +92,10 @@ export default async function AdminPage() {
                         </td>
                         <td className="px-4 py-4">{session.location?.name ?? "Lokasi dihapus"}</td>
                         <td className="number px-4 py-4">{formatDateTime(session.clockInAt, timezone)}</td>
-                        <td className="number px-4 py-4">{session.durationMinutes == null ? "Berjalan" : formatMinutes(session.durationMinutes)}</td>
+                        <td className="number px-4 py-4">{attendanceStatusLabel(session.status, session.durationMinutes)}</td>
                         <td className="px-6 py-4">
                           <span className={`rounded-full px-3 py-1 text-xs font-bold ${session.status === "OPEN" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"}`}>
-                            {session.status === "OPEN" ? "Aktif" : "Selesai"}
+                            {session.status === "CLOSED" ? "Selesai" : attendanceStatusLabel(session.status, session.durationMinutes)}
                           </span>
                         </td>
                       </tr>
@@ -120,17 +121,19 @@ export default async function AdminPage() {
 
         {requests.length ? <section className="surface overflow-hidden">
           <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
-            <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Persetujuan clock out manual</h2>
+            <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Persetujuan koreksi absensi</h2>
           </div>
           <div className="divide-y divide-slate-100">
             {requests.map((request) => <article key={request.id} className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
                 <p className="font-bold text-slate-900">{request.attendanceSession.employee.name}</p>
-                <p className="mt-1 text-sm text-slate-600">Usulan: {formatDateTime(request.requestedClockOutAt, timezone)}</p>
+                <p className="mt-1 text-sm font-medium text-[#0868D7]">{request.requestType === "MISSING_SESSION" ? "Lupa clock in" : "Lupa clock out"}</p>
+                {request.requestedClockInAt ? <p className="mt-1 text-sm text-slate-600">Clock in: {formatDateTime(request.requestedClockInAt, timezone)}</p> : null}
+                <p className="mt-1 text-sm text-slate-600">Clock out: {formatDateTime(request.requestedClockOutAt, timezone)}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{request.reason}</p>
                 <Link href={`/admin/sessions/${request.attendanceSessionId}`} className="mt-2 inline-flex text-sm font-bold text-[#0868D7] hover:underline">Lihat {request.attendanceSession.evidences.length} foto dokumentasi</Link>
               </div>
-              <form action={reviewClockOutRequestAction} className="flex flex-wrap gap-2">
+              <form action={reviewAttendanceRequestAction} className="flex flex-wrap gap-2">
                 <input type="hidden" name="requestId" value={request.id} />
                 <button name="decision" value="REJECTED" className="button-secondary">Tolak</button>
                 <button name="decision" value="APPROVED" className="button-primary">Setujui</button>

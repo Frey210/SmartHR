@@ -1,8 +1,9 @@
 "use client";
 
-import { Camera, Crosshair, MapPin, SpinnerGap, UploadSimple } from "@phosphor-icons/react";
-import { type FormEvent, useRef, useState, useTransition } from "react";
-import { clockInAction, clockOutAction, requestManualClockOutAction, type AttendanceActionResult } from "./actions";
+import { Camera, Crosshair, MapPin, SpinnerGap, Trash, UploadSimple } from "@phosphor-icons/react";
+import Image from "next/image";
+import { type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction, useEffect, useRef, useState, useTransition } from "react";
+import { clockInAction, clockOutAction, requestAttendanceCorrectionAction, type AttendanceActionResult } from "./actions";
 
 async function compressImage(file: File) {
   const bitmap = await createImageBitmap(file);
@@ -16,31 +17,81 @@ async function compressImage(file: File) {
   return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" });
 }
 
-function EvidencePicker({ dark = false }: { dark?: boolean }) {
+type EvidenceDraft = { id: string; file: File; previewUrl: string; description: string };
+
+function EvidencePicker({ items, setItems, dark = false }: { items: EvidenceDraft[]; setItems: Dispatch<SetStateAction<EvidenceDraft[]>>; dark?: boolean }) {
+  const itemsRef = useRef(items);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+  useEffect(() => () => itemsRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl)), []);
   const buttonClass = dark
     ? "border-white/30 bg-white/10 text-white hover:bg-white/15"
     : "border-slate-300 bg-white text-slate-700 hover:border-slate-500 hover:bg-slate-50";
+  function addFiles(event: ChangeEvent<HTMLInputElement>) {
+    const files = [...(event.currentTarget.files ?? [])];
+    setItems((current) => [...current, ...files.map((file) => ({ id: crypto.randomUUID(), file, previewUrl: URL.createObjectURL(file), description: "" }))]);
+    event.currentTarget.value = "";
+  }
+  function remove(id: string) {
+    setItems((current) => current.filter((item) => {
+      if (item.id === id) URL.revokeObjectURL(item.previewUrl);
+      return item.id !== id;
+    }));
+  }
   return (
-    <fieldset className="grid gap-2">
-      <legend className={`text-sm font-bold ${dark ? "text-white" : "text-slate-700"}`}>Foto dokumentasi</legend>
+    <fieldset className="grid gap-3">
+      <legend className={`text-sm font-bold ${dark ? "text-white" : "text-slate-700"}`}>Dokumentasi pekerjaan</legend>
       <div className="grid grid-cols-2 gap-2">
         <label className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[10px] border px-3 text-sm font-bold transition-colors ${buttonClass}`}>
           <Camera size={20} aria-hidden="true" /> Kamera
-          <input name="evidence" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="sr-only" />
+          <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={addFiles} className="sr-only" />
         </label>
         <label className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[10px] border px-3 text-sm font-bold transition-colors ${buttonClass}`}>
           <UploadSimple size={20} aria-hidden="true" /> Galeri / file
-          <input name="evidence" type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" />
+          <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={addFiles} className="sr-only" />
         </label>
       </div>
-      <p className={`text-xs leading-5 ${dark ? "text-slate-300" : "text-slate-500"}`}>Pilih minimal satu foto. Kamera membuka kamera belakang; galeri/file menerima beberapa foto.</p>
+      <p className={`text-xs leading-5 ${dark ? "text-slate-300" : "text-slate-500"}`}>Setiap foto memiliki deskripsi sendiri. Tambahkan minimal satu foto.</p>
+      {items.length ? <div className="grid gap-3">
+        {items.map((item, index) => <article key={item.id} className={`grid gap-3 rounded-xl border p-3 sm:grid-cols-[88px_1fr] ${dark ? "border-white/15 bg-white/10" : "border-slate-200 bg-slate-50"}`}>
+          <Image src={item.previewUrl} alt={`Pratinjau foto ${index + 1}`} width={88} height={88} unoptimized className="size-[88px] rounded-lg object-cover" />
+          <div className="min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className={`text-sm font-bold ${dark ? "text-white" : "text-slate-800"}`}>Foto {index + 1}</p>
+                <p className={`truncate text-xs ${dark ? "text-slate-300" : "text-slate-500"}`}>{item.file.name}</p>
+              </div>
+              <button type="button" onClick={() => remove(item.id)} className={`flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${dark ? "text-slate-200 hover:bg-white/10 hover:text-white" : "text-slate-500 hover:bg-red-50 hover:text-red-700"}`} aria-label={`Hapus foto ${index + 1}`}>
+                <Trash size={20} aria-hidden="true" />
+              </button>
+            </div>
+            <label className={`mt-3 grid gap-1.5 text-sm font-bold ${dark ? "text-white" : "text-slate-700"}`}>
+              Deskripsi foto {index + 1}
+              <textarea required rows={2} value={item.description} onChange={(event) => setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, description: event.target.value } : entry))} className="field min-h-20 resize-y py-2 font-normal text-slate-900" placeholder="Jelaskan pekerjaan pada foto ini..." />
+            </label>
+          </div>
+        </article>)}
+      </div> : null}
     </fieldset>
   );
+}
+
+function evidenceError(items: EvidenceDraft[]) {
+  if (!items.length) return "Tambahkan minimal satu foto dari kamera atau galeri.";
+  if (items.some((item) => !item.description.trim())) return "Isi deskripsi untuk setiap foto dokumentasi.";
+  return null;
+}
+
+async function appendEvidence(payload: FormData, items: EvidenceDraft[]) {
+  for (const item of items) {
+    payload.append("evidence", await compressImage(item.file));
+    payload.append("evidenceDescription", item.description.trim());
+  }
 }
 
 export function AttendanceControl({ hasOpenSession, hasLocations }: { hasOpenSession: boolean; hasLocations: boolean }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<AttendanceActionResult | null>(null);
+  const [evidence, setEvidence] = useState<EvidenceDraft[]>([]);
 
   function clockIn() {
     setResult(null);
@@ -74,20 +125,17 @@ export function AttendanceControl({ hasOpenSession, hasLocations }: { hasOpenSes
   function clockOut(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setResult(null);
-    const form = event.currentTarget;
-    const source = new FormData(form);
-    const files = source.getAll("evidence").filter((value): value is File => value instanceof File && value.size > 0);
-    if (!files.length) return setResult({ ok: false, message: "Tambahkan minimal satu foto dari kamera atau galeri." });
+    const validationError = evidenceError(evidence);
+    if (validationError) return setResult({ ok: false, message: validationError });
     if (!navigator.geolocation) return setResult({ ok: false, message: "Browser ini tidak mendukung akses lokasi." });
     navigator.geolocation.getCurrentPosition(
       (position) => startTransition(async () => {
         try {
           const payload = new FormData();
-          payload.set("description", String(source.get("description") ?? ""));
           payload.set("latitude", String(position.coords.latitude));
           payload.set("longitude", String(position.coords.longitude));
           payload.set("accuracyM", String(position.coords.accuracy));
-          for (const file of files) payload.append("evidence", await compressImage(file));
+          await appendEvidence(payload, evidence);
           const response = await clockOutAction(payload);
           setResult(response);
           if (response.ok) window.location.reload();
@@ -111,11 +159,7 @@ export function AttendanceControl({ hasOpenSession, hasLocations }: { hasOpenSes
         {pending ? <SpinnerGap size={22} className="animate-spin" aria-hidden="true" /> : <Crosshair size={22} weight="bold" aria-hidden="true" />}
         {pending ? "Membaca lokasi..." : hasOpenSession ? "Sesi sedang aktif" : "Clock In"}
       </button> : <form onSubmit={clockOut} className="grid gap-4">
-        <label className="grid gap-2 text-sm font-bold text-white">
-          Deskripsi pekerjaan
-          <textarea name="description" required rows={4} className="field min-h-28 resize-y py-3 font-normal text-slate-900" placeholder="Jelaskan pekerjaan yang diselesaikan..." />
-        </label>
-        <EvidencePicker dark />
+        <EvidencePicker items={evidence} setItems={setEvidence} dark />
         <button type="submit" className="button-primary min-h-14 w-full text-base" disabled={pending}>
           {pending ? <SpinnerGap size={22} className="animate-spin" aria-hidden="true" /> : null}
           {pending ? "Memproses dokumentasi..." : "Clock Out"}
@@ -142,31 +186,35 @@ export function AttendanceControl({ hasOpenSession, hasLocations }: { hasOpenSes
   );
 }
 
-export function ManualClockOutRequest({ defaultTime }: { defaultTime: string }) {
+export function AttendanceCorrectionRequest({ defaultStartTime, defaultEndTime, sessions }: { defaultStartTime: string; defaultEndTime: string; sessions: { id: string; label: string }[] }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<AttendanceActionResult | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [requestType, setRequestType] = useState(sessions.length ? "CLOCK_OUT" : "MISSING_SESSION");
+  const [evidence, setEvidence] = useState<EvidenceDraft[]>([]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const source = new FormData(form);
-    const localTime = String(source.get("localTime") ?? "");
-    const files = source.getAll("evidence").filter((value): value is File => value instanceof File && value.size > 0);
-    if (!files.length) {
-      setResult({ ok: false, message: "Tambahkan minimal satu foto dari kamera atau galeri." });
-      return;
-    }
+    const validationError = evidenceError(evidence);
+    if (validationError) return setResult({ ok: false, message: validationError });
     startTransition(async () => {
       try {
         const payload = new FormData();
-        payload.set("requestedClockOutAt", new Date(localTime).toISOString());
+        payload.set("requestType", requestType);
+        if (requestType === "CLOCK_OUT") payload.set("attendanceSessionId", String(source.get("attendanceSessionId") ?? ""));
+        if (requestType === "MISSING_SESSION") payload.set("requestedClockInAt", new Date(String(source.get("requestedClockInAt") ?? "")).toISOString());
+        payload.set("requestedClockOutAt", new Date(String(source.get("requestedClockOutAt") ?? "")).toISOString());
         payload.set("reason", String(source.get("reason") ?? ""));
-        payload.set("description", String(source.get("description") ?? ""));
-        for (const file of files) payload.append("evidence", await compressImage(file));
-        const response = await requestManualClockOutAction(payload);
+        await appendEvidence(payload, evidence);
+        const response = await requestAttendanceCorrectionAction(payload);
         setResult(response);
-        if (response.ok) formRef.current?.reset();
+        if (response.ok) {
+          evidence.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+          setEvidence([]);
+          formRef.current?.reset();
+        }
       } catch {
         setResult({ ok: false, message: "Foto gagal diproses. Coba gunakan foto lain." });
       }
@@ -174,16 +222,25 @@ export function ManualClockOutRequest({ defaultTime }: { defaultTime: string }) 
   }
 
   return <form ref={formRef} onSubmit={submit} className="grid gap-4">
+    <fieldset className="grid grid-cols-2 gap-2">
+      <legend className="mb-2 text-sm font-bold text-slate-700">Jenis koreksi</legend>
+      <button type="button" onClick={() => setRequestType("CLOCK_OUT")} disabled={!sessions.length} aria-pressed={requestType === "CLOCK_OUT"} className={`min-h-12 cursor-pointer rounded-[10px] border px-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${requestType === "CLOCK_OUT" ? "border-[#1A82FF] bg-blue-50 text-[#0868D7]" : "border-slate-300 bg-white text-slate-600"}`}>Lupa clock out</button>
+      <button type="button" onClick={() => setRequestType("MISSING_SESSION")} aria-pressed={requestType === "MISSING_SESSION"} className={`min-h-12 cursor-pointer rounded-[10px] border px-3 text-sm font-bold transition-colors ${requestType === "MISSING_SESSION" ? "border-[#1A82FF] bg-blue-50 text-[#0868D7]" : "border-slate-300 bg-white text-slate-600"}`}>Lupa clock in</button>
+    </fieldset>
+    {requestType === "CLOCK_OUT" ? <label className="grid gap-2 text-sm font-bold text-slate-700">Sesi yang belum selesai
+      <select name="attendanceSessionId" required className="field">
+        {sessions.map((session) => <option key={session.id} value={session.id}>{session.label}</option>)}
+      </select>
+    </label> : <label className="grid gap-2 text-sm font-bold text-slate-700">Waktu clock in
+      <input name="requestedClockInAt" type="datetime-local" required defaultValue={defaultStartTime} className="field" />
+    </label>}
     <label className="grid gap-2 text-sm font-bold text-slate-700">Waktu clock out
-      <input name="localTime" type="datetime-local" required defaultValue={defaultTime} className="field" />
+      <input name="requestedClockOutAt" type="datetime-local" required defaultValue={defaultEndTime} className="field" />
     </label>
     <label className="grid gap-2 text-sm font-bold text-slate-700">Alasan
-      <textarea name="reason" required rows={3} className="field min-h-24 resize-y py-3 font-normal" placeholder="Jelaskan mengapa clock out tidak tercatat..." />
+      <textarea name="reason" required rows={3} className="field min-h-24 resize-y py-3 font-normal" placeholder="Jelaskan mengapa absensi tidak tercatat..." />
     </label>
-    <label className="grid gap-2 text-sm font-bold text-slate-700">Deskripsi pekerjaan
-      <textarea name="description" required rows={3} className="field min-h-24 resize-y py-3 font-normal" placeholder="Jelaskan pekerjaan yang diselesaikan..." />
-    </label>
-    <EvidencePicker />
+    <EvidencePicker items={evidence} setItems={setEvidence} />
     <button className="button-secondary" disabled={pending}>{pending ? "Mengirim..." : "Ajukan ke admin"}</button>
     {result ? <p role="status" className={`rounded-xl border px-4 py-3 text-sm ${result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-red-200 bg-red-50 text-red-900"}`}>{result.message}</p> : null}
   </form>;

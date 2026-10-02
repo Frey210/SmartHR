@@ -94,6 +94,8 @@ model ClockOutRequest {
   id                       String            @id @default(cuid())
   attendanceSessionId      String
   attendanceSession        AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+  requestType              String            @default("CLOCK_OUT")
+  requestedClockInAt       DateTime?
   requestedClockOutAt      DateTime
   requestLocationLatitude  Float?
   requestLocationLongitude Float?

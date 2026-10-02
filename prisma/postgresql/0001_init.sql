@@ -40,7 +40,8 @@ CREATE TABLE "WorkEvidence" (
 );
 
 CREATE TABLE "ClockOutRequest" (
-  "id" TEXT PRIMARY KEY, "attendanceSessionId" TEXT NOT NULL, "requestedClockOutAt" TIMESTAMP(3) NOT NULL,
+  "id" TEXT PRIMARY KEY, "attendanceSessionId" TEXT NOT NULL, "requestType" TEXT NOT NULL DEFAULT 'CLOCK_OUT',
+  "requestedClockInAt" TIMESTAMP(3), "requestedClockOutAt" TIMESTAMP(3) NOT NULL,
   "requestLocationLatitude" DOUBLE PRECISION, "requestLocationLongitude" DOUBLE PRECISION,
   "reason" TEXT NOT NULL, "status" TEXT NOT NULL DEFAULT 'PENDING', "reviewedBy" TEXT,
   "reviewedAt" TIMESTAMP(3), "reviewNote" TEXT, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -66,5 +67,6 @@ CREATE UNIQUE INDEX "one_open_attendance_per_employee" ON "AttendanceSession"("e
 CREATE INDEX "WorkEvidence_attendanceSessionId_idx" ON "WorkEvidence"("attendanceSessionId");
 CREATE INDEX "ClockOutRequest_status_idx" ON "ClockOutRequest"("status");
 CREATE INDEX "ClockOutRequest_attendanceSessionId_idx" ON "ClockOutRequest"("attendanceSessionId");
+CREATE UNIQUE INDEX "one_pending_correction_per_session" ON "ClockOutRequest"("attendanceSessionId") WHERE "status" = 'PENDING';
 CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
 CREATE INDEX "AuditLog_action_idx" ON "AuditLog"("action");

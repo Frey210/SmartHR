@@ -3,24 +3,35 @@ import { AppHeader } from "@/app/_components/app-header";
 import { EmployeeLocationPreview } from "@/app/_components/location-map";
 import { LiveServerClock } from "@/app/_components/live-server-clock";
 import { requireUser } from "@/lib/auth";
+import { attendanceStatusLabel } from "@/lib/attendance";
 import { businessDate, dateTimeLocalValue, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
-import { AttendanceControl, ManualClockOutRequest } from "./attendance-control";
+import { AttendanceControl, AttendanceCorrectionRequest } from "./attendance-control";
 
 export default async function EmployeePage() {
   const user = await requireUser("EMPLOYEE");
   const settings = await db.appSetting.findUnique({ where: { id: 1 } });
   const timezone = settings?.timezone ?? "Asia/Singapore";
   const today = businessDate(timezone);
-  const [sessions, locations] = await Promise.all([
+  const [sessions, locations, unresolved, pendingCorrections] = await Promise.all([
     db.attendanceSession.findMany({
       where: { employeeId: user.id, businessDate: today },
       include: { location: true },
       orderBy: { clockInAt: "desc" },
     }),
     db.attendanceLocation.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    db.attendanceSession.findMany({
+      where: { employeeId: user.id, status: { in: ["OPEN", "INCOMPLETE"] } },
+      include: { correctionRequests: { where: { status: "PENDING" } } },
+      orderBy: { clockInAt: "desc" },
+    }),
+    db.clockOutRequest.count({ where: { status: "PENDING", attendanceSession: { employeeId: user.id } } }),
   ]);
-  const active = sessions.find((session) => session.status === "OPEN");
+  const active = unresolved.find((session) => session.status === "OPEN" && session.businessDate === today);
+  const staleOpen = unresolved.some((session) => session.status === "OPEN" && session.businessDate !== today);
+  const correctableSessions = unresolved
+    .filter((session) => !session.correctionRequests.length)
+    .map((session) => ({ id: session.id, label: `Clock in ${formatDateTime(session.clockInAt, timezone)}` }));
   const totalMinutes = sessions.reduce((total, session) => total + (session.durationMinutes ?? 0), 0);
 
   return (
@@ -40,13 +51,13 @@ export default async function EmployeePage() {
               <p className="text-sm text-slate-300">Status saat ini</p>
               <p className="mt-1 flex items-center gap-2 text-xl font-bold">
                 <span className={`size-2.5 rounded-full ${active ? "bg-emerald-400" : "bg-slate-400"}`} aria-hidden="true" />
-                {active ? "Sedang bekerja" : sessions.length ? "Tidak ada sesi aktif" : "Belum ada sesi"}
+                {active ? "Sedang bekerja" : staleOpen ? "Sesi lama perlu dikoreksi" : sessions.length ? "Tidak ada sesi aktif" : "Belum ada sesi"}
               </p>
             </div>
             <AttendanceControl hasOpenSession={Boolean(active)} hasLocations={locations.length > 0} />
             {active ? (
               <p className="rounded-xl bg-white/10 px-4 py-3 text-sm leading-6 text-slate-100">
-                Sesi dimulai {formatDateTime(active.clockInAt, timezone)}. Clock out memerlukan lokasi, deskripsi pekerjaan, dan minimal satu foto.
+                Sesi dimulai {formatDateTime(active.clockInAt, timezone)}. Clock out memerlukan lokasi dan minimal satu foto dengan deskripsinya.
               </p>
             ) : null}
           </div>
@@ -81,8 +92,8 @@ export default async function EmployeePage() {
                         <MapPin size={16} aria-hidden="true" /> {session.location?.name ?? "Lokasi dihapus"}
                       </p>
                     </div>
-                    <span className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${session.status === "OPEN" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"}`}>
-                      {session.status === "OPEN" ? "Aktif" : formatMinutes(session.durationMinutes ?? 0)}
+                    <span className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${session.status === "OPEN" ? "bg-emerald-100 text-emerald-800" : session.status === "PENDING" ? "bg-amber-100 text-amber-900" : session.status === "REJECTED" ? "bg-red-100 text-red-800" : "bg-slate-100 text-slate-700"}`}>
+                      {session.status === "OPEN" ? "Aktif" : attendanceStatusLabel(session.status, session.durationMinutes)}
                     </span>
                   </article>
                 ))}
@@ -91,11 +102,16 @@ export default async function EmployeePage() {
               <p className="px-5 py-10 text-center text-sm leading-6 text-slate-500">Belum ada sesi yang tercatat hari ini.</p>
             )}
           </div>
-          {active ? <div className="surface p-5">
-            <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Lupa clock out?</h2>
-            <p className="mb-5 mt-2 text-sm leading-6 text-slate-500">Ajukan waktu yang benar. Sesi baru ditutup setelah disetujui admin.</p>
-            <ManualClockOutRequest defaultTime={dateTimeLocalValue(new Date(), timezone)} />
-          </div> : null}
+          <div className="surface p-5">
+            <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Koreksi absensi</h2>
+            <p className="mb-5 mt-2 text-sm leading-6 text-slate-500">Gunakan jika lupa clock in atau clock out. Permintaan baru berlaku setelah disetujui admin.</p>
+            {pendingCorrections ? <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{pendingCorrections} koreksi sedang menunggu admin. Anda tetap dapat memulai sesi hari berikutnya.</p> : null}
+            <AttendanceCorrectionRequest
+              sessions={correctableSessions}
+              defaultStartTime={dateTimeLocalValue(new Date(new Date().getTime() - 3_600_000), timezone)}
+              defaultEndTime={dateTimeLocalValue(new Date(), timezone)}
+            />
+          </div>
         </section>
       </main>
     </div>

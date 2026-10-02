@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarBlank, Clock, DownloadSimple, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import { AppHeader } from "@/app/_components/app-header";
 import { requireUser } from "@/lib/auth";
+import { attendanceStatusLabel } from "@/lib/attendance";
 import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
 import { monthRange } from "@/lib/month";
@@ -50,7 +51,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
       </section>
 
       <section className="surface overflow-hidden">
-        {sessions.length ? <div className="overflow-x-auto"><table className="w-full min-w-[850px] text-left text-sm"><thead className="bg-slate-50 text-slate-600"><tr><th className="px-6 py-3">Karyawan</th><th className="px-4 py-3">Tanggal</th><th className="px-4 py-3">Lokasi</th><th className="px-4 py-3">Durasi</th><th className="px-4 py-3">Bukti</th><th className="px-6 py-3">Detail</th></tr></thead><tbody className="divide-y divide-slate-100">{sessions.map((session) => <tr key={session.id}><td className="px-6 py-4 font-bold text-slate-900">{session.employee.name}</td><td className="number px-4 py-4">{formatDateTime(session.clockInAt, timezone)}</td><td className="px-4 py-4">{session.location?.name ?? "Lokasi dihapus"}</td><td className="number px-4 py-4">{session.durationMinutes == null ? "Berjalan" : formatMinutes(session.durationMinutes)}</td><td className="number px-4 py-4">{session.evidences.length}</td><td className="px-6 py-4"><Link href={`/admin/sessions/${session.id}`} className="font-bold text-[#0868D7] hover:underline">Buka</Link></td></tr>)}</tbody></table></div> : <p className="px-6 py-14 text-center text-sm text-slate-500">Tidak ada sesi untuk filter ini.</p>}
+        {sessions.length ? <div className="overflow-x-auto"><table className="w-full min-w-[850px] text-left text-sm"><thead className="bg-slate-50 text-slate-600"><tr><th className="px-6 py-3">Karyawan</th><th className="px-4 py-3">Tanggal</th><th className="px-4 py-3">Lokasi</th><th className="px-4 py-3">Durasi / status</th><th className="px-4 py-3">Bukti</th><th className="px-6 py-3">Detail</th></tr></thead><tbody className="divide-y divide-slate-100">{sessions.map((session) => <tr key={session.id}><td className="px-6 py-4 font-bold text-slate-900">{session.employee.name}</td><td className="number px-4 py-4">{formatDateTime(session.clockInAt, timezone)}</td><td className="px-4 py-4">{session.location?.name ?? "Tanpa lokasi"}</td><td className="number px-4 py-4">{attendanceStatusLabel(session.status, session.durationMinutes)}</td><td className="number px-4 py-4">{session.evidences.length}</td><td className="px-6 py-4"><Link href={`/admin/sessions/${session.id}`} className="font-bold text-[#0868D7] hover:underline">Buka</Link></td></tr>)}</tbody></table></div> : <p className="px-6 py-14 text-center text-sm text-slate-500">Tidak ada sesi untuk filter ini.</p>}
       </section>
     </main>
   </div>;

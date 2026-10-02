@@ -28,7 +28,7 @@ export async function addLocationAction(_: LocationState, formData: FormData): P
   return { ok: true, message: "Lokasi absensi berhasil ditambahkan." };
 }
 
-export async function reviewClockOutRequestAction(formData: FormData) {
+export async function reviewAttendanceRequestAction(formData: FormData) {
   const admin = await requireUser("ADMIN");
   const requestId = String(formData.get("requestId") ?? "");
   const decision = String(formData.get("decision") ?? "");
@@ -36,17 +36,19 @@ export async function reviewClockOutRequestAction(formData: FormData) {
   if (!request || request.status !== "PENDING" || !["APPROVED", "REJECTED"].includes(decision)) return;
 
   const reviewedAt = new Date();
-  if (decision === "APPROVED" && request.attendanceSession.status === "OPEN") {
-    const durationMinutes = Math.max(0, Math.floor((request.requestedClockOutAt.getTime() - request.attendanceSession.clockInAt.getTime()) / 60_000));
+  if (decision === "APPROVED") {
+    const clockInAt = request.requestedClockInAt ?? request.attendanceSession.clockInAt;
+    const durationMinutes = Math.max(0, Math.floor((request.requestedClockOutAt.getTime() - clockInAt.getTime()) / 60_000));
     await db.$transaction([
       db.clockOutRequest.update({ where: { id: request.id }, data: { status: decision, reviewedBy: admin.id, reviewedAt } }),
-      db.attendanceSession.update({ where: { id: request.attendanceSessionId }, data: { status: "CLOSED", clockOutAt: request.requestedClockOutAt, durationMinutes, clockOutSource: "ADMIN_APPROVED" } }),
-      db.auditLog.create({ data: { actorId: admin.id, action: "CLOCK_OUT_REQUEST_APPROVED", entityType: "ClockOutRequest", entityId: request.id } }),
+      db.attendanceSession.update({ where: { id: request.attendanceSessionId }, data: { status: "CLOSED", clockInAt, clockOutAt: request.requestedClockOutAt, durationMinutes, clockOutSource: "ADMIN_APPROVED" } }),
+      db.auditLog.create({ data: { actorId: admin.id, action: "ATTENDANCE_CORRECTION_APPROVED", entityType: "ClockOutRequest", entityId: request.id } }),
     ]);
   } else {
     await db.$transaction([
       db.clockOutRequest.update({ where: { id: request.id }, data: { status: decision, reviewedBy: admin.id, reviewedAt } }),
-      db.auditLog.create({ data: { actorId: admin.id, action: "CLOCK_OUT_REQUEST_REJECTED", entityType: "ClockOutRequest", entityId: request.id } }),
+      db.attendanceSession.update({ where: { id: request.attendanceSessionId }, data: { status: request.requestType === "MISSING_SESSION" ? "REJECTED" : "INCOMPLETE" } }),
+      db.auditLog.create({ data: { actorId: admin.id, action: "ATTENDANCE_CORRECTION_REJECTED", entityType: "ClockOutRequest", entityId: request.id } }),
     ]);
   }
   revalidatePath("/admin");
