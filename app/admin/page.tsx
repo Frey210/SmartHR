@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AppHeader } from "@/app/_components/app-header";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { LocationMap } from "@/app/_components/location-map";
+import { LiveDuration } from "@/app/_components/live-duration";
 import { requireUser } from "@/lib/auth";
 import { attendanceStatusLabel } from "@/lib/attendance";
 import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
@@ -16,6 +17,7 @@ export default async function AdminPage() {
   const settings = await db.appSetting.findUnique({ where: { id: 1 } });
   const timezone = settings?.timezone ?? "Asia/Singapore";
   const today = businessDate(timezone);
+  const serverNow = new Date().getTime();
 
   const [employees, locations, sessions, requests] = await Promise.all([
     db.user.findMany({ where: { role: "EMPLOYEE" }, orderBy: { name: "asc" } }),
@@ -92,7 +94,7 @@ export default async function AdminPage() {
                         </td>
                         <td className="px-4 py-4">{session.location?.name ?? "Lokasi dihapus"}</td>
                         <td className="number px-4 py-4">{formatDateTime(session.clockInAt, timezone)}</td>
-                        <td className="number px-4 py-4">{attendanceStatusLabel(session.status, session.durationMinutes)}</td>
+                        <td className="number px-4 py-4">{session.status === "OPEN" ? <LiveDuration startedAt={session.clockInAt.getTime()} serverNow={serverNow} /> : attendanceStatusLabel(session.status, session.durationMinutes)}</td>
                         <td className="px-6 py-4">
                           <span className={`rounded-full px-3 py-1 text-xs font-bold ${session.status === "OPEN" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"}`}>
                             {session.status === "CLOSED" ? "Selesai" : attendanceStatusLabel(session.status, session.durationMinutes)}
