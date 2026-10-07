@@ -62,7 +62,7 @@ export async function createEmployeeAction(_: AdminFormState, formData: FormData
   const position = String(formData.get("position") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   if (name.length < 2 || name.length > 100) return { ok: false, message: "Nama harus terdiri dari 2-100 karakter." };
-  if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { ok: false, message: "Username harus 3-40 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung." };
+  if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { ok: false, message: "Username harus 3-40 karakter: huruf, angka, titik, garis bawah, atau tanda hubung." };
   if (!position || position.length > 80) return { ok: false, message: "Posisi wajib diisi dan maksimal 80 karakter." };
   if (password.length < 8 || password.length > 128) return { ok: false, message: "Password awal harus terdiri dari 8-128 karakter." };
   try {
@@ -82,7 +82,7 @@ export async function updateEmployeeAction(_: AdminFormState, formData: FormData
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const position = String(formData.get("position") ?? "").trim();
   if (name.length < 2 || name.length > 100) return { ok: false, message: "Nama harus terdiri dari 2-100 karakter." };
-  if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { ok: false, message: "Username harus 3-40 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung." };
+  if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { ok: false, message: "Username harus 3-40 karakter: huruf, angka, titik, garis bawah, atau tanda hubung." };
   if (!position || position.length > 80) return { ok: false, message: "Posisi wajib diisi dan maksimal 80 karakter." };
   const employee = await db.user.findFirst({ where: { id: userId, role: "EMPLOYEE" }, select: { id: true } });
   if (!employee) return { ok: false, message: "Akun karyawan tidak ditemukan." };

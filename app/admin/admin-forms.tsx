@@ -16,7 +16,7 @@ export function EmployeeForm() {
   return <form action={action} className="grid gap-4">
     <label className="grid gap-2 text-sm font-bold text-slate-700">Nama lengkap<input name="name" required minLength={2} maxLength={100} className="field font-normal" /></label>
     <div className="grid gap-4 sm:grid-cols-2">
-      <label className="grid gap-2 text-sm font-bold text-slate-700">Username<input name="username" required minLength={3} maxLength={40} pattern="[a-z0-9._-]+" className="field font-normal" /></label>
+      <label className="grid gap-2 text-sm font-bold text-slate-700">Username<input name="username" required minLength={3} maxLength={40} pattern="[A-Za-z0-9._-]+" title="Gunakan huruf, angka, titik, garis bawah, atau tanda hubung." autoCapitalize="none" className="field font-normal" /></label>
       <label className="grid gap-2 text-sm font-bold text-slate-700">Posisi<input name="position" required maxLength={80} className="field font-normal" /></label>
     </div>
     <label className="grid gap-2 text-sm font-bold text-slate-700">Password awal<input name="password" type="password" required minLength={8} maxLength={128} autoComplete="new-password" className="field font-normal" /></label>
@@ -37,7 +37,7 @@ export function EmployeeEditor({ employee }: { employee: { id: string; name: str
         <input type="hidden" name="userId" value={employee.id} />
         <label className="grid gap-1.5 text-sm font-bold text-slate-700">Nama<input name="name" required minLength={2} maxLength={100} defaultValue={employee.name} className="field font-normal" /></label>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="grid gap-1.5 text-sm font-bold text-slate-700">Username<input name="username" required minLength={3} maxLength={40} pattern="[a-z0-9._-]+" defaultValue={employee.username} className="field font-normal" /></label>
+          <label className="grid gap-1.5 text-sm font-bold text-slate-700">Username<input name="username" required minLength={3} maxLength={40} pattern="[A-Za-z0-9._-]+" title="Gunakan huruf, angka, titik, garis bawah, atau tanda hubung." autoCapitalize="none" defaultValue={employee.username} className="field font-normal" /></label>
           <label className="grid gap-1.5 text-sm font-bold text-slate-700">Posisi<input name="position" required maxLength={80} defaultValue={employee.position} className="field font-normal" /></label>
         </div>
         <Message state={editState} />
