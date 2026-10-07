@@ -10,12 +10,19 @@ export function AppSplash() {
   const [closing, setClosing] = useState(false);
 
   useEffect(() => {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches
+      || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    if (!standalone) {
+      const removeTimer = window.setTimeout(() => setVisible(false), 0);
+      return () => window.clearTimeout(removeTimer);
+    }
+
     if (sessionStorage.getItem(seenKey)) {
       const removeTimer = window.setTimeout(() => setVisible(false), 0);
       return () => window.clearTimeout(removeTimer);
     }
 
-    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (videoRef.current) videoRef.current.playbackRate = reduceMotion ? 1 : 4;
     if (reduceMotion) videoRef.current?.pause();
 

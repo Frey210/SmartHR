@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatElapsedDuration } from "@/lib/attendance";
 
-export function LiveDuration({ startedAt, serverNow }: { startedAt: number; serverNow: number }) {
+export function LiveDuration({ startedAt, serverNow, baseMinutes = 0 }: { startedAt: number; serverNow: number; baseMinutes?: number }) {
   const [now, setNow] = useState(serverNow);
   const origin = useRef({ serverNow, performanceMs: 0 });
 
@@ -16,7 +16,8 @@ export function LiveDuration({ startedAt, serverNow }: { startedAt: number; serv
     return () => window.clearInterval(interval);
   }, [serverNow]);
 
-  return <span className="number inline-block min-w-[8ch] tabular-nums" role="timer" aria-label={`Durasi berjalan ${formatElapsedDuration(startedAt, now)}`}>
-    {formatElapsedDuration(startedAt, now)}
+  const duration = formatElapsedDuration(startedAt, now, baseMinutes);
+  return <span className="number inline-block min-w-[8ch] tabular-nums" role="timer" aria-label={`Durasi berjalan ${duration}`}>
+    {duration}
   </span>;
 }

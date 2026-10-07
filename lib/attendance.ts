@@ -8,8 +8,8 @@ export function attendanceStatusLabel(status: string, durationMinutes: number | 
   return formatMinutes(durationMinutes ?? 0);
 }
 
-export function formatElapsedDuration(startedAtMs: number, nowMs: number) {
-  const totalSeconds = Math.max(0, Math.floor((nowMs - startedAtMs) / 1_000));
+export function formatElapsedDuration(startedAtMs: number, nowMs: number, baseMinutes = 0) {
+  const totalSeconds = Math.max(0, Math.floor((nowMs - startedAtMs) / 1_000)) + Math.max(0, baseMinutes) * 60;
   const hours = Math.floor(totalSeconds / 3_600);
   const minutes = Math.floor((totalSeconds % 3_600) / 60);
   const seconds = totalSeconds % 60;

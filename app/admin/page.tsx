@@ -9,7 +9,7 @@ import { attendanceStatusLabel } from "@/lib/attendance";
 import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
 import { LocationForm } from "./location-form";
-import { EmployeeForm, TimezoneForm } from "./admin-forms";
+import { EmployeeEditor, EmployeeForm, TimezoneForm } from "./admin-forms";
 import { deleteEvidenceAction, deleteLocationAction, resetEmployeePasswordAction, reviewAttendanceRequestAction, toggleEmployeeAction, toggleLocationAction } from "./actions";
 
 export default async function AdminPage() {
@@ -163,7 +163,9 @@ export default async function AdminPage() {
                   <p className="mt-1 text-sm text-slate-500">@{employee.username} · {employee.position}</p>
                   <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-bold ${employee.isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{employee.isActive ? "Aktif" : "Nonaktif"}</span>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-[minmax(150px,1fr)_auto]">
+                <div className="grid min-w-0 gap-2 lg:min-w-[430px]">
+                  <EmployeeEditor employee={{ id: employee.id, name: employee.name, username: employee.username, position: employee.position }} />
+                  <div className="grid gap-2 sm:grid-cols-[minmax(150px,1fr)_auto]">
                   <form action={resetEmployeePasswordAction} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <input type="hidden" name="userId" value={employee.id} />
                     <input name="password" type="password" required minLength={8} maxLength={128} autoComplete="new-password" className="field min-w-0" placeholder="Password baru" aria-label={`Password baru untuk ${employee.name}`} />
@@ -173,6 +175,7 @@ export default async function AdminPage() {
                     <input type="hidden" name="userId" value={employee.id} />
                     <ConfirmSubmit className={employee.isActive ? "button-danger w-full" : "button-secondary w-full"} message={`${employee.isActive ? "Nonaktifkan" : "Aktifkan"} akun ${employee.name}?`}>{employee.isActive ? "Nonaktifkan" : "Aktifkan"}</ConfirmSubmit>
                   </form>
+                  </div>
                 </div>
               </article>)}
             </div>

@@ -75,6 +75,54 @@ export async function createEmployeeAction(_: AdminFormState, formData: FormData
   return { ok: true, message: "Akun karyawan berhasil dibuat." };
 }
 
+export async function updateEmployeeAction(_: AdminFormState, formData: FormData): Promise<AdminFormState> {
+  const admin = await requireUser("ADMIN");
+  const userId = String(formData.get("userId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const username = String(formData.get("username") ?? "").trim().toLowerCase();
+  const position = String(formData.get("position") ?? "").trim();
+  if (name.length < 2 || name.length > 100) return { ok: false, message: "Nama harus terdiri dari 2-100 karakter." };
+  if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { ok: false, message: "Username harus 3-40 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung." };
+  if (!position || position.length > 80) return { ok: false, message: "Posisi wajib diisi dan maksimal 80 karakter." };
+  const employee = await db.user.findFirst({ where: { id: userId, role: "EMPLOYEE" }, select: { id: true } });
+  if (!employee) return { ok: false, message: "Akun karyawan tidak ditemukan." };
+  try {
+    await db.user.update({ where: { id: employee.id }, data: { name, username, position } });
+  } catch {
+    return { ok: false, message: "Username sudah digunakan." };
+  }
+  await writeAudit(admin.id, "EMPLOYEE_UPDATED", "User", employee.id, { name, username, position });
+  revalidatePath("/admin");
+  revalidatePath("/admin/records");
+  return { ok: true, message: "Data akun berhasil diperbarui." };
+}
+
+export async function deleteEmployeeAction(_: AdminFormState, formData: FormData): Promise<AdminFormState> {
+  const admin = await requireUser("ADMIN");
+  const userId = String(formData.get("userId") ?? "");
+  const employee = await db.user.findFirst({
+    where: { id: userId, role: "EMPLOYEE" },
+    select: { id: true, name: true, username: true },
+  });
+  if (!employee) return { ok: false, message: "Akun karyawan tidak ditemukan." };
+  await db.$transaction([
+    db.user.update({ where: { id: employee.id }, data: { role: "ARCHIVED_EMPLOYEE", isActive: false } }),
+    db.authSession.deleteMany({ where: { userId: employee.id } }),
+    db.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "EMPLOYEE_ARCHIVED",
+        entityType: "User",
+        entityId: employee.id,
+        details: JSON.stringify({ name: employee.name, username: employee.username }),
+      },
+    }),
+  ]);
+  revalidatePath("/admin");
+  revalidatePath("/admin/records");
+  return { ok: true, message: "Akun karyawan berhasil dihapus." };
+}
+
 export async function resetEmployeePasswordAction(formData: FormData) {
   const admin = await requireUser("ADMIN");
   const userId = String(formData.get("userId") ?? "");

@@ -1,6 +1,7 @@
 import { ArrowRight, Clock, MapPin, NotePencil, Timer } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { LiveServerClock } from "@/app/_components/live-server-clock";
+import { LiveDuration } from "@/app/_components/live-duration";
 import { requireUser } from "@/lib/auth";
 import { attendanceStatusLabel } from "@/lib/attendance";
 import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
@@ -69,7 +70,9 @@ export default async function EmployeePage() {
       <article className="surface p-4 sm:p-5">
         <Timer size={23} className="text-[#1A82FF]" aria-hidden="true" />
         <p className="mt-4 text-xs font-medium text-slate-500 sm:text-sm">Total hari ini</p>
-        <p className="number mt-1 text-xl font-bold text-[#2B3C5A] sm:text-2xl">{formatMinutes(totalMinutes)}</p>
+        <p className="number mt-1 text-xl font-bold text-[#2B3C5A] sm:text-2xl">
+          {active ? <LiveDuration startedAt={active.clockInAt.getTime()} serverNow={new Date().getTime()} baseMinutes={totalMinutes} /> : formatMinutes(totalMinutes)}
+        </p>
       </article>
       <article className="surface p-4 sm:p-5">
         <Clock size={23} className="text-[#1A82FF]" aria-hidden="true" />
