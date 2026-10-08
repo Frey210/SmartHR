@@ -9,17 +9,11 @@ import { businessDate } from "@/lib/date";
 import { db } from "@/lib/db";
 import { nearestAllowedLocation } from "@/lib/geo";
 import { writeAudit } from "@/lib/audit";
-import { matchesImageMime } from "@/lib/image";
+import { imageExtension, matchesImageMime } from "@/lib/image";
 import { evidenceDescriptions } from "@/lib/evidence";
 
 type ClockInInput = { latitude: number; longitude: number; accuracyM: number };
 export type AttendanceActionResult = { ok: boolean; message: string };
-
-const allowedImages = new Map([
-  ["image/jpeg", "jpg"],
-  ["image/png", "png"],
-  ["image/webp", "webp"],
-]);
 
 type PreparedEvidence = { file: File; bytes: Buffer; extension: string; description: string };
 
@@ -28,10 +22,10 @@ async function prepareEvidence(formData: FormData): Promise<{ files: PreparedEvi
   if (!files.length) return { files: [], error: "Tambahkan minimal satu foto dokumentasi." };
   const descriptions = evidenceDescriptions(files.length, formData.getAll("evidenceDescription"));
   if (!descriptions) return { files: [], error: "Setiap foto wajib memiliki satu deskripsi pekerjaan." };
-  if (files.some((file) => !allowedImages.has(file.type) || file.size > 3_000_000)) {
+  if (files.some((file) => !imageExtension(file.type) || file.size > 3_000_000)) {
     return { files: [], error: "Foto harus berformat JPG, PNG, atau WebP dan maksimal 3 MB setelah kompresi." };
   }
-  const prepared = await Promise.all(files.map(async (file, index) => ({ file, bytes: Buffer.from(await file.arrayBuffer()), extension: allowedImages.get(file.type)!, description: descriptions[index] })));
+  const prepared = await Promise.all(files.map(async (file, index) => ({ file, bytes: Buffer.from(await file.arrayBuffer()), extension: imageExtension(file.type)!, description: descriptions[index] })));
   if (prepared.some(({ file, bytes }) => !matchesImageMime(bytes, file.type))) return { files: [], error: "Isi file tidak cocok dengan format gambar yang dipilih." };
   return { files: prepared };
 }

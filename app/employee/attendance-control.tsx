@@ -4,6 +4,7 @@ import { Camera, Crosshair, MapPin, SpinnerGap, Trash, UploadSimple } from "@pho
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction, useEffect, useRef, useState, useTransition } from "react";
+import { imageExtension } from "@/lib/image";
 import { clockInAction, clockOutAction, requestAttendanceCorrectionAction, type AttendanceActionResult } from "./actions";
 
 async function compressImage(file: File) {
@@ -14,8 +15,13 @@ async function compressImage(file: File) {
   canvas.height = Math.round(bitmap.height * scale);
   canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Gagal mengompres foto")), "image/webp", 0.72));
-  return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" });
+  let blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Gagal mengompres foto")), "image/webp", 0.72));
+  if (blob.type !== "image/webp") {
+    blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Gagal mengompres foto")), "image/jpeg", 0.8));
+  }
+  const extension = imageExtension(blob.type);
+  if (!extension) throw new Error("Format hasil kompresi tidak didukung");
+  return new File([blob], file.name.replace(/\.[^.]+$/, "") + `.${extension}`, { type: blob.type });
 }
 
 type EvidenceDraft = { id: string; file: File; previewUrl: string; description: string };
