@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createSession } from "@/lib/auth";
+import { roleHome } from "@/lib/roles";
 import { db } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
 import { writeAudit } from "@/lib/audit";
@@ -31,5 +32,5 @@ export async function loginAction(_: LoginState, formData: FormData): Promise<Lo
 
   clearLoginFailures(rateKey);
   await createSession(user.id);
-  redirect(user.role === "ADMIN" ? "/admin" : "/employee");
+  redirect(roleHome(user.role));
 }

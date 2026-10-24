@@ -250,7 +250,7 @@ export function AttendanceCorrectionRequest({ defaultStartTime, defaultEndTime, 
       <textarea name="reason" required rows={3} className="field min-h-24 resize-y py-3 font-normal" placeholder="Jelaskan mengapa absensi tidak tercatat..." />
     </label>
     <EvidencePicker items={evidence} setItems={setEvidence} />
-    <button className="button-secondary" disabled={pending}>{pending ? "Mengirim..." : "Ajukan ke admin"}</button>
+    <button className="button-secondary" disabled={pending}>{pending ? "Mengirim..." : "Ajukan ke Admin/HR"}</button>
     {result ? <p role="status" className={`rounded-xl border px-4 py-3 text-sm ${result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-red-200 bg-red-50 text-red-900"}`}>{result.message}</p> : null}
   </form>;
 }

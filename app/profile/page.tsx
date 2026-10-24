@@ -5,7 +5,7 @@ import { PasswordForm } from "./password-form";
 export default async function ProfilePage() {
   const user = await requireUser();
   return <div className="min-h-[100dvh]">
-    <AppHeader name={user.name} position={user.position} role={user.role as "ADMIN" | "EMPLOYEE"} />
+    <AppHeader name={user.name} position={user.position} role={user.role as "ADMIN" | "HR" | "EMPLOYEE"} />
     <main id="main-content" className={`mx-auto max-w-xl px-4 py-8 sm:px-6 lg:py-12 ${user.role === "EMPLOYEE" ? "pb-28" : ""}`}>
       <section className="surface p-5 sm:p-7">
         <p className="text-sm font-bold text-[#0868D7]">Keamanan akun</p>

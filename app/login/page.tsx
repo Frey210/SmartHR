@@ -1,11 +1,12 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { roleHome } from "@/lib/roles";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect(user.role === "ADMIN" ? "/admin" : "/employee");
+  if (user) redirect(roleHome(user.role));
 
   return (
     <main className="grid min-h-[100dvh] lg:grid-cols-[1.05fr_0.95fr]">

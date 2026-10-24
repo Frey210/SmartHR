@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { formatElapsedDuration } from "@/lib/attendance";
+import { useRouter } from "next/navigation";
+import { formatElapsedDuration, isAttendanceDayExpired } from "@/lib/attendance";
 
-export function LiveDuration({ startedAt, serverNow, baseMinutes = 0 }: { startedAt: number; serverNow: number; baseMinutes?: number }) {
+export function LiveDuration({ startedAt, serverNow, baseMinutes = 0, timezone }: { startedAt: number; serverNow: number; baseMinutes?: number; timezone: string }) {
+  const router = useRouter();
   const [now, setNow] = useState(serverNow);
   const origin = useRef({ serverNow, performanceMs: 0 });
+  const expired = isAttendanceDayExpired(startedAt, now, timezone);
+
+  useEffect(() => {
+    if (expired) router.refresh();
+  }, [expired, router]);
 
   useEffect(() => {
     origin.current = { serverNow, performanceMs: performance.now() };
@@ -16,7 +23,7 @@ export function LiveDuration({ startedAt, serverNow, baseMinutes = 0 }: { starte
     return () => window.clearInterval(interval);
   }, [serverNow]);
 
-  const duration = formatElapsedDuration(startedAt, now, baseMinutes);
+  const duration = formatElapsedDuration(startedAt, now, baseMinutes, timezone);
   return <span className="number inline-block min-w-[8ch] tabular-nums" role="timer" aria-label={`Durasi berjalan ${duration}`}>
     {duration}
   </span>;

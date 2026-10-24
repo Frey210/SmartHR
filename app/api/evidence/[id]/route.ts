@@ -9,9 +9,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const { id } = await params;
   const evidence = await db.workEvidence.findFirst({
     where: { id, deletedAt: null },
-    include: { attendanceSession: { select: { employeeId: true } } },
+    include: { attendanceSession: { select: { employeeId: true, correctionRequests: { select: { id: true }, take: 1 } } } },
   });
-  if (!evidence || (user.role !== "ADMIN" && evidence.attendanceSession.employeeId !== user.id)) {
+  if (!evidence || (user.role !== "ADMIN" && !(user.role === "HR" && evidence.attendanceSession.correctionRequests.length > 0) && evidence.attendanceSession.employeeId !== user.id)) {
     return new Response("Not found", { status: 404 });
   }
 

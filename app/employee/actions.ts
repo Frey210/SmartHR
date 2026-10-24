@@ -11,6 +11,7 @@ import { nearestAllowedLocation } from "@/lib/geo";
 import { writeAudit } from "@/lib/audit";
 import { imageExtension, matchesImageMime } from "@/lib/image";
 import { evidenceDescriptions } from "@/lib/evidence";
+import { expireAttendanceSessions } from "@/lib/attendance-cutoff";
 
 type ClockInInput = { latitude: number; longitude: number; accuracyM: number };
 export type AttendanceActionResult = { ok: boolean; message: string };
@@ -63,7 +64,8 @@ export async function clockInAction(input: ClockInInput): Promise<AttendanceActi
     db.attendanceSession.findFirst({ where: { employeeId: user.id, status: "OPEN" } }),
   ]);
 
-  const today = businessDate(settings?.timezone ?? "Asia/Singapore");
+  const clockInAt = new Date();
+  const today = businessDate(settings?.timezone ?? "Asia/Singapore", clockInAt);
   if (openSession?.businessDate === today) return { ok: false, message: "Anda masih memiliki sesi kerja aktif hari ini." };
   if (!locations.length) return { ok: false, message: "Belum ada lokasi absensi aktif. Hubungi admin." };
 
@@ -85,7 +87,7 @@ export async function clockInAction(input: ClockInInput): Promise<AttendanceActi
         employeeId: user.id,
         locationId: nearest.location.id,
         businessDate: today,
-        clockInAt: new Date(),
+        clockInAt,
         clockInLatitude: latitude,
         clockInLongitude: longitude,
         clockInAccuracyM: accuracyM,
@@ -93,7 +95,7 @@ export async function clockInAction(input: ClockInInput): Promise<AttendanceActi
       };
     const session = openSession
       ? (await db.$transaction([
-          db.attendanceSession.update({ where: { id: openSession.id }, data: { status: "INCOMPLETE" } }),
+          db.attendanceSession.update({ where: { id: openSession.id, status: "OPEN" }, data: { status: "INCOMPLETE", durationMinutes: null } }),
           db.attendanceSession.create({ data }),
         ]))[1]
       : await db.attendanceSession.create({ data });
@@ -119,11 +121,18 @@ export async function clockOutAction(formData: FormData): Promise<AttendanceActi
   if (![latitude, longitude, accuracyM].every(Number.isFinite) || accuracyM > 50) {
     return { ok: false, message: "Lokasi clock out belum akurat. Tunggu GPS membaik lalu coba lagi." };
   }
-  const [session, locations] = await Promise.all([
+  const [session, locations, settings] = await Promise.all([
     db.attendanceSession.findFirst({ where: { employeeId: user.id, status: "OPEN" } }),
     db.attendanceLocation.findMany({ where: { isActive: true } }),
+    db.appSetting.findUnique({ where: { id: 1 } }),
   ]);
-  if (!session) return { ok: false, message: "Tidak ada sesi aktif untuk diakhiri." };
+  if (!session) return { ok: false, message: "Tidak ada sesi aktif hari ini. Jika lupa clock out, ajukan koreksi absensi." };
+  const timezone = settings?.timezone ?? "Asia/Singapore";
+  const cutoffMessage = "Sesi telah melewati pergantian hari. Durasi belum dihitung. Ajukan koreksi lupa clock out.";
+  if (session.businessDate !== businessDate(timezone)) {
+    await expireAttendanceSessions(timezone);
+    return { ok: false, message: cutoffMessage };
+  }
 
   const nearest = nearestAllowedLocation(
     { latitude, longitude },
@@ -136,10 +145,15 @@ export async function clockOutAction(formData: FormData): Promise<AttendanceActi
     saved.push(...await storeEvidence(session.id, evidence.files));
 
     const clockOutAt = new Date();
+    if (session.businessDate !== businessDate(timezone, clockOutAt)) {
+      await removeStoredEvidence(saved);
+      await expireAttendanceSessions(timezone, clockOutAt);
+      return { ok: false, message: cutoffMessage };
+    }
     const durationMinutes = Math.max(0, Math.floor((clockOutAt.getTime() - session.clockInAt.getTime()) / 60_000));
     await db.$transaction([
       db.attendanceSession.update({
-        where: { id: session.id },
+        where: { id: session.id, status: "OPEN" },
         data: {
           status: "CLOSED",
           clockOutAt,
@@ -187,7 +201,7 @@ export async function requestAttendanceCorrectionAction(formData: FormData): Pro
     include: { correctionRequests: { where: { status: "PENDING" } } },
   }) : null;
   if (requestType === "CLOCK_OUT" && !session) return { ok: false, message: "Sesi yang akan dikoreksi tidak ditemukan." };
-  if (session?.correctionRequests.length) return { ok: false, message: "Permintaan sebelumnya masih menunggu keputusan admin." };
+  if (session?.correctionRequests.length) return { ok: false, message: "Permintaan sebelumnya masih menunggu verifikasi Admin/HR." };
   const effectiveClockIn = session?.clockInAt ?? requestedClockInAt;
   if (requestedClockOutAt <= effectiveClockIn) return { ok: false, message: "Waktu clock out harus setelah clock in." };
 
@@ -220,5 +234,6 @@ export async function requestAttendanceCorrectionAction(formData: FormData): Pro
   revalidatePath("/employee");
   revalidatePath("/employee/correction");
   revalidatePath("/admin");
-  return { ok: true, message: "Koreksi absensi dikirim dan menunggu persetujuan admin." };
+  revalidatePath("/hr");
+  return { ok: true, message: "Koreksi absensi dikirim dan menunggu persetujuan Admin/HR." };
 }

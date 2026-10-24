@@ -4,6 +4,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { roleHome, type UserRole } from "@/lib/roles";
+import { expireAttendanceSessions } from "@/lib/attendance-cutoff";
 
 const COOKIE_NAME = "mtc_session";
 const SESSION_DAYS = 7;
@@ -44,12 +46,14 @@ export async function getCurrentUser() {
   });
 
   if (!session || session.expiresAt <= new Date() || !session.user.isActive) return null;
+  const settings = await db.appSetting.findUnique({ where: { id: 1 } });
+  await expireAttendanceSessions(settings?.timezone ?? "Asia/Singapore");
   return session.user;
 }
 
-export async function requireUser(role?: "ADMIN" | "EMPLOYEE") {
+export async function requireUser(role?: UserRole | UserRole[]) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (role && user.role !== role) redirect(user.role === "ADMIN" ? "/admin" : "/employee");
+  if (role && !(Array.isArray(role) ? role : [role]).includes(user.role as UserRole)) redirect(roleHome(user.role));
   return user;
 }

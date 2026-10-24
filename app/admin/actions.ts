@@ -29,30 +29,38 @@ export async function addLocationAction(_: LocationState, formData: FormData): P
 }
 
 export async function reviewAttendanceRequestAction(formData: FormData) {
-  const admin = await requireUser("ADMIN");
+  const admin = await requireUser(["ADMIN", "HR"]);
   const requestId = String(formData.get("requestId") ?? "");
   const decision = String(formData.get("decision") ?? "");
   const request = await db.clockOutRequest.findUnique({ where: { id: requestId }, include: { attendanceSession: true } });
   if (!request || request.status !== "PENDING" || !["APPROVED", "REJECTED"].includes(decision)) return;
 
   const reviewedAt = new Date();
-  if (decision === "APPROVED") {
-    const clockInAt = request.requestedClockInAt ?? request.attendanceSession.clockInAt;
-    const durationMinutes = Math.max(0, Math.floor((request.requestedClockOutAt.getTime() - clockInAt.getTime()) / 60_000));
-    await db.$transaction([
-      db.clockOutRequest.update({ where: { id: request.id }, data: { status: decision, reviewedBy: admin.id, reviewedAt } }),
-      db.attendanceSession.update({ where: { id: request.attendanceSessionId }, data: { status: "CLOSED", clockInAt, clockOutAt: request.requestedClockOutAt, durationMinutes, clockOutSource: "ADMIN_APPROVED" } }),
-      db.auditLog.create({ data: { actorId: admin.id, action: "ATTENDANCE_CORRECTION_APPROVED", entityType: "ClockOutRequest", entityId: request.id } }),
-    ]);
-  } else {
-    await db.$transaction([
-      db.clockOutRequest.update({ where: { id: request.id }, data: { status: decision, reviewedBy: admin.id, reviewedAt } }),
-      db.attendanceSession.update({ where: { id: request.attendanceSessionId }, data: { status: request.requestType === "MISSING_SESSION" ? "REJECTED" : "INCOMPLETE" } }),
-      db.auditLog.create({ data: { actorId: admin.id, action: "ATTENDANCE_CORRECTION_REJECTED", entityType: "ClockOutRequest", entityId: request.id } }),
-    ]);
-  }
+  const clockInAt = request.requestedClockInAt ?? request.attendanceSession.clockInAt;
+  if (decision === "APPROVED" && (request.requestedClockOutAt <= clockInAt || request.requestedClockOutAt > reviewedAt)) return;
+  await db.$transaction(async (tx) => {
+    const claimed = await tx.clockOutRequest.updateMany({
+      where: { id: request.id, status: "PENDING" },
+      data: { status: decision, reviewedBy: admin.id, reviewedAt },
+    });
+    if (!claimed.count) return;
+    await tx.attendanceSession.update({
+      where: { id: request.attendanceSessionId },
+      data: decision === "APPROVED" ? {
+        status: "CLOSED", clockInAt, clockOutAt: request.requestedClockOutAt,
+        durationMinutes: Math.floor((request.requestedClockOutAt.getTime() - clockInAt.getTime()) / 60_000),
+        clockOutSource: admin.role === "HR" ? "HR_APPROVED" : "ADMIN_APPROVED",
+      } : { status: request.requestType === "MISSING_SESSION" ? "REJECTED" : "INCOMPLETE", durationMinutes: null },
+    });
+    await tx.auditLog.create({ data: { actorId: admin.id, action: decision === "APPROVED" ? "ATTENDANCE_CORRECTION_APPROVED" : "ATTENDANCE_CORRECTION_REJECTED", entityType: "ClockOutRequest", entityId: request.id } });
+  });
   revalidatePath("/admin");
+  revalidatePath("/hr");
   revalidatePath("/employee");
+  revalidatePath("/employee/history");
+  revalidatePath("/employee/correction");
+  revalidatePath("/admin/records");
+  revalidatePath(`/admin/sessions/${request.attendanceSessionId}`);
 }
 
 export async function createEmployeeAction(_: AdminFormState, formData: FormData): Promise<AdminFormState> {
@@ -61,18 +69,20 @@ export async function createEmployeeAction(_: AdminFormState, formData: FormData
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const position = String(formData.get("position") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const role = String(formData.get("role") ?? "EMPLOYEE");
+  if (!["EMPLOYEE", "HR"].includes(role)) return { ok: false, message: "Role akun tidak valid." };
   if (name.length < 2 || name.length > 100) return { ok: false, message: "Nama harus terdiri dari 2-100 karakter." };
   if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { ok: false, message: "Username harus 3-40 karakter: huruf, angka, titik, garis bawah, atau tanda hubung." };
   if (!position || position.length > 80) return { ok: false, message: "Posisi wajib diisi dan maksimal 80 karakter." };
   if (password.length < 8 || password.length > 128) return { ok: false, message: "Password awal harus terdiri dari 8-128 karakter." };
   try {
-    const employee = await db.user.create({ data: { name, username, position, passwordHash: await hashPassword(password), role: "EMPLOYEE" } });
-    await writeAudit(admin.id, "EMPLOYEE_CREATED", "User", employee.id, { username });
+    const employee = await db.user.create({ data: { name, username, position, passwordHash: await hashPassword(password), role } });
+    await writeAudit(admin.id, "EMPLOYEE_CREATED", "User", employee.id, { username, role });
   } catch {
     return { ok: false, message: "Username sudah digunakan." };
   }
   revalidatePath("/admin");
-  return { ok: true, message: "Akun karyawan berhasil dibuat." };
+  return { ok: true, message: "Akun berhasil dibuat." };
 }
 
 export async function updateEmployeeAction(_: AdminFormState, formData: FormData): Promise<AdminFormState> {
@@ -81,17 +91,22 @@ export async function updateEmployeeAction(_: AdminFormState, formData: FormData
   const name = String(formData.get("name") ?? "").trim();
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const position = String(formData.get("position") ?? "").trim();
+  const role = String(formData.get("role") ?? "EMPLOYEE");
+  if (!["EMPLOYEE", "HR"].includes(role)) return { ok: false, message: "Role akun tidak valid." };
   if (name.length < 2 || name.length > 100) return { ok: false, message: "Nama harus terdiri dari 2-100 karakter." };
   if (!/^[a-z0-9._-]{3,40}$/.test(username)) return { ok: false, message: "Username harus 3-40 karakter: huruf, angka, titik, garis bawah, atau tanda hubung." };
   if (!position || position.length > 80) return { ok: false, message: "Posisi wajib diisi dan maksimal 80 karakter." };
-  const employee = await db.user.findFirst({ where: { id: userId, role: "EMPLOYEE" }, select: { id: true } });
+  const employee = await db.user.findFirst({ where: { id: userId, role: { in: ["EMPLOYEE", "HR"] } }, select: { id: true, role: true } });
   if (!employee) return { ok: false, message: "Akun karyawan tidak ditemukan." };
   try {
-    await db.user.update({ where: { id: employee.id }, data: { name, username, position } });
+    await db.$transaction([
+      db.user.update({ where: { id: employee.id }, data: { name, username, position, role } }),
+      ...(employee.role === role ? [] : [db.authSession.deleteMany({ where: { userId: employee.id } })]),
+    ]);
   } catch {
     return { ok: false, message: "Username sudah digunakan." };
   }
-  await writeAudit(admin.id, "EMPLOYEE_UPDATED", "User", employee.id, { name, username, position });
+  await writeAudit(admin.id, "EMPLOYEE_UPDATED", "User", employee.id, { name, username, position, role });
   revalidatePath("/admin");
   revalidatePath("/admin/records");
   return { ok: true, message: "Data akun berhasil diperbarui." };
@@ -101,7 +116,7 @@ export async function deleteEmployeeAction(_: AdminFormState, formData: FormData
   const admin = await requireUser("ADMIN");
   const userId = String(formData.get("userId") ?? "");
   const employee = await db.user.findFirst({
-    where: { id: userId, role: "EMPLOYEE" },
+    where: { id: userId, role: { in: ["EMPLOYEE", "HR"] } },
     select: { id: true, name: true, username: true },
   });
   if (!employee) return { ok: false, message: "Akun karyawan tidak ditemukan." };
@@ -128,7 +143,7 @@ export async function resetEmployeePasswordAction(formData: FormData) {
   const userId = String(formData.get("userId") ?? "");
   const password = String(formData.get("password") ?? "");
   if (password.length < 8 || password.length > 128) return;
-  const employee = await db.user.findFirst({ where: { id: userId, role: "EMPLOYEE" }, select: { id: true } });
+  const employee = await db.user.findFirst({ where: { id: userId, role: { in: ["EMPLOYEE", "HR"] } }, select: { id: true } });
   if (!employee) return;
   await db.$transaction([
     db.user.update({ where: { id: employee.id }, data: { passwordHash: await hashPassword(password) } }),
@@ -141,7 +156,7 @@ export async function resetEmployeePasswordAction(formData: FormData) {
 export async function toggleEmployeeAction(formData: FormData) {
   const admin = await requireUser("ADMIN");
   const userId = String(formData.get("userId") ?? "");
-  const employee = await db.user.findFirst({ where: { id: userId, role: "EMPLOYEE" }, select: { id: true, isActive: true } });
+  const employee = await db.user.findFirst({ where: { id: userId, role: { in: ["EMPLOYEE", "HR"] } }, select: { id: true, isActive: true } });
   if (!employee) return;
   await db.$transaction([
     db.user.update({ where: { id: employee.id }, data: { isActive: !employee.isActive } }),

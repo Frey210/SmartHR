@@ -26,7 +26,7 @@ export default async function EmployeePage() {
     db.clockOutRequest.count({ where: { status: "PENDING", attendanceSession: { employeeId: user.id } } }),
   ]);
   const active = sessions.find((session) => session.status === "OPEN");
-  const staleOpen = unresolved.some((session) => session.status === "OPEN" && session.businessDate !== today);
+  const staleOpen = unresolved.some((session) => session.status === "INCOMPLETE");
   const totalMinutes = sessions.reduce((total, session) => total + (session.durationMinutes ?? 0), 0);
 
   return <main id="main-content" className="mx-auto grid max-w-5xl gap-5 px-4 py-5 pb-32 sm:px-6 lg:gap-6 lg:px-8 lg:py-10">
@@ -71,7 +71,7 @@ export default async function EmployeePage() {
         <Timer size={23} className="text-[#1A82FF]" aria-hidden="true" />
         <p className="mt-4 text-xs font-medium text-slate-500 sm:text-sm">Total hari ini</p>
         <p className="number mt-1 text-xl font-bold text-[#2B3C5A] sm:text-2xl">
-          {active ? <LiveDuration startedAt={active.clockInAt.getTime()} serverNow={new Date().getTime()} baseMinutes={totalMinutes} /> : formatMinutes(totalMinutes)}
+          {active ? <LiveDuration startedAt={active.clockInAt.getTime()} serverNow={new Date().getTime()} baseMinutes={totalMinutes} timezone={timezone} /> : formatMinutes(totalMinutes)}
         </p>
       </article>
       <article className="surface p-4 sm:p-5">

@@ -24,6 +24,7 @@ export default async function EmployeeAttendancePage() {
       <p className="mt-3 text-sm font-bold text-[#0868D7]">Absensi karyawan</p>
       <h1 className="mt-1 font-[family-name:var(--font-heading)] text-2xl font-bold tracking-[-0.025em] text-[#2B3C5A] sm:text-3xl">{active ? "Selesaikan sesi kerja" : "Mulai sesi kerja"}</h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Periksa posisi Anda pada peta, lalu konfirmasi absensi. Titik harus berada maksimal 50 meter dari lokasi aktif.</p>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Clock out sebelum pukul 00.00 waktu perusahaan. Sesi yang terlewat tidak dihitung sampai koreksi disetujui Admin/HR.</p>
     </section>
 
     <ol className="grid grid-cols-2 gap-2" aria-label="Tahapan absensi">

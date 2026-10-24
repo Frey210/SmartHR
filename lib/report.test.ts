@@ -18,3 +18,16 @@ test("employeeAttendanceStats merangkum jam payroll per karyawan dan hari", () =
   assert.equal(firstClockInAt.toISOString(), "2026-10-01T00:00:00.000Z");
   assert.equal(lastClockOutAt?.toISOString(), "2026-10-01T04:00:00.000Z");
 });
+
+test("unresolved midnight sessions and pending corrections contribute no payroll minutes", () => {
+  const employee = { name: "Ayu", username: "ayu", position: "Teknisi" };
+  const sessions = ["INCOMPLETE", "PENDING", "REJECTED"].map((status) => ({
+    employeeId: "1", businessDate: "2026-10-01", status, durationMinutes: null,
+    clockInAt: new Date("2026-10-01T00:00:00Z"), clockOutAt: null, employee,
+  }));
+  const [stats] = employeeAttendanceStats(sessions);
+  assert.equal(stats.totalMinutes, 0);
+  assert.equal(stats.workDays, 0);
+  assert.equal(stats.completedSessions, 0);
+  assert.equal(stats.incompleteSessions, 3);
+});

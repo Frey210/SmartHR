@@ -27,13 +27,12 @@ export default async function EmployeeCorrectionPage() {
       <div className="mt-3 flex items-start gap-3">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0868D7]"><ClockCounterClockwise size={24} weight="bold" aria-hidden="true" /></span>
         <div>
-          <p className="text-sm font-bold text-[#0868D7]">Pengajuan ke admin</p>
           <h1 className="mt-1 font-[family-name:var(--font-heading)] text-2xl font-bold tracking-[-0.025em] text-[#2B3C5A] sm:text-3xl">Koreksi absensi</h1>
         </div>
       </div>
-      <p className="mt-3 text-sm leading-6 text-slate-600">Gunakan jika lupa clock in atau clock out. Perubahan berlaku setelah disetujui admin.</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600">Gunakan jika lupa clock in atau clock out. Sesi yang belum diakhiri saat pergantian hari tidak dihitung. Durasi masuk rekap setelah koreksi disetujui Admin/HR.</p>
     </section>
-    {pendingCorrections ? <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">{pendingCorrections} koreksi sedang menunggu admin. Anda tetap dapat memulai sesi hari berikutnya.</p> : null}
+    {pendingCorrections ? <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">{pendingCorrections} koreksi sedang menunggu verifikasi Admin/HR. Anda tetap dapat memulai sesi hari berikutnya.</p> : null}
     <section className="surface p-5 sm:p-6">
       <AttendanceCorrectionRequest
         sessions={sessions}

@@ -36,6 +36,14 @@ docker compose --env-file .env.production -f docker-compose.production.yml run -
 docker compose --env-file .env.production -f docker-compose.production.yml up -d
 ```
 
+## HR verification and daily cutoff
+
+- Admin can create or edit accounts with the `HR` role. HR signs in at `/hr`, reviews attendance corrections, and views evidence attached to correction sessions. Account, location, timezone, report export, and evidence deletion actions remain Admin-only.
+- Changing an account's role revokes its existing login sessions. Review decisions record the reviewer ID and audit event; approved HR corrections use `HR_APPROVED` as the clock-out source.
+- At midnight in the configured company timezone, unfinished attendance is excluded from counted hours. Live timers reset and refresh the page. The next authenticated request marks old `OPEN` sessions `INCOMPLETE` with `durationMinutes = null`, including sessions already open before this release. No scheduled task is required for the calculation rule.
+- Employees can start a new day's session while older sessions await correction. Only an approved correction restores the old session's duration. Deliberate overnight work must also use the correction flow.
+- This release needs no schema migration for HR because roles are stored as text. Already `CLOSED` historical sessions are preserved; inaccurate old completed records require individual review.
+
 ## Backup and restore
 
 Run database backups on LXC 102 using a restricted `.pgpass` file:

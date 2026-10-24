@@ -1,6 +1,7 @@
 import { Clock, FileImage, MapPin, Timer, Trash, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { AppHeader } from "@/app/_components/app-header";
+import { AttendanceApprovals } from "@/app/_components/attendance-approvals";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { LocationMap } from "@/app/_components/location-map";
 import { LiveDuration } from "@/app/_components/live-duration";
@@ -10,7 +11,7 @@ import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
 import { LocationForm } from "./location-form";
 import { EmployeeEditor, EmployeeForm, TimezoneForm } from "./admin-forms";
-import { deleteEvidenceAction, deleteLocationAction, resetEmployeePasswordAction, reviewAttendanceRequestAction, toggleEmployeeAction, toggleLocationAction } from "./actions";
+import { deleteEvidenceAction, deleteLocationAction, resetEmployeePasswordAction, toggleEmployeeAction, toggleLocationAction } from "./actions";
 
 export default async function AdminPage() {
   const user = await requireUser("ADMIN");
@@ -19,19 +20,18 @@ export default async function AdminPage() {
   const today = businessDate(timezone);
   const serverNow = new Date().getTime();
 
-  const [employees, locations, sessions, requests] = await Promise.all([
-    db.user.findMany({ where: { role: "EMPLOYEE" }, orderBy: { name: "asc" } }),
+  const [employees, locations, sessions] = await Promise.all([
+    db.user.findMany({ where: { role: { in: ["EMPLOYEE", "HR"] } }, orderBy: { name: "asc" } }),
     db.attendanceLocation.findMany({ orderBy: { createdAt: "desc" } }),
     db.attendanceSession.findMany({
       where: { businessDate: today },
       include: { employee: true, location: true, evidences: { where: { deletedAt: null } } },
       orderBy: { clockInAt: "desc" },
     }),
-    db.clockOutRequest.findMany({ where: { status: "PENDING" }, include: { attendanceSession: { include: { employee: true, evidences: { where: { deletedAt: null }, select: { id: true } } } } }, orderBy: { createdAt: "asc" } }),
   ]);
 
   const activeCount = sessions.filter((session) => session.status === "OPEN").length;
-  const enabledEmployees = employees.filter((employee) => employee.isActive).length;
+  const enabledEmployees = employees.filter((employee) => employee.isActive && employee.role === "EMPLOYEE").length;
   const totalMinutes = sessions.reduce((total, session) => total + (session.durationMinutes ?? 0), 0);
   const stats = [
     { label: "Karyawan aktif", value: enabledEmployees, icon: UsersThree },
@@ -94,7 +94,7 @@ export default async function AdminPage() {
                         </td>
                         <td className="px-4 py-4">{session.location?.name ?? "Lokasi dihapus"}</td>
                         <td className="number px-4 py-4">{formatDateTime(session.clockInAt, timezone)}</td>
-                        <td className="number px-4 py-4">{session.status === "OPEN" ? <LiveDuration startedAt={session.clockInAt.getTime()} serverNow={serverNow} /> : attendanceStatusLabel(session.status, session.durationMinutes)}</td>
+                        <td className="number px-4 py-4">{session.status === "OPEN" ? <LiveDuration startedAt={session.clockInAt.getTime()} serverNow={serverNow} timezone={timezone} /> : attendanceStatusLabel(session.status, session.durationMinutes)}</td>
                         <td className="px-6 py-4">
                           <span className={`rounded-full px-3 py-1 text-xs font-bold ${session.status === "OPEN" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"}`}>
                             {session.status === "CLOSED" ? "Selesai" : attendanceStatusLabel(session.status, session.durationMinutes)}
@@ -121,50 +121,23 @@ export default async function AdminPage() {
           </aside>
         </section>
 
-        <section id="attendance-approvals" className="surface scroll-mt-6 overflow-hidden">
-          <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
-            <div>
-              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Persetujuan koreksi absensi</h2>
-              <p className="mt-1 text-sm text-slate-500">Tinjau pengajuan lupa clock in atau clock out.</p>
-            </div>
-            <span className="number rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-[#0868D7]">{requests.length}</span>
-          </div>
-          {requests.length ? <div className="divide-y divide-slate-100">
-            {requests.map((request) => <article key={request.id} className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div>
-                <p className="font-bold text-slate-900">{request.attendanceSession.employee.name}</p>
-                <p className="mt-1 text-sm font-medium text-[#0868D7]">{request.requestType === "MISSING_SESSION" ? "Lupa clock in" : "Lupa clock out"}</p>
-                {request.requestedClockInAt ? <p className="mt-1 text-sm text-slate-600">Clock in: {formatDateTime(request.requestedClockInAt, timezone)}</p> : null}
-                <p className="mt-1 text-sm text-slate-600">Clock out: {formatDateTime(request.requestedClockOutAt, timezone)}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-500">{request.reason}</p>
-                <Link href={`/admin/sessions/${request.attendanceSessionId}`} className="mt-2 inline-flex text-sm font-bold text-[#0868D7] hover:underline">Lihat {request.attendanceSession.evidences.length} foto dokumentasi</Link>
-              </div>
-              <form action={reviewAttendanceRequestAction} className="flex flex-wrap gap-2">
-                <input type="hidden" name="requestId" value={request.id} />
-                <button name="decision" value="REJECTED" className="button-secondary">Tolak</button>
-                <button name="decision" value="APPROVED" className="button-primary">Setujui</button>
-              </form>
-            </article>)}
-          </div> : <div className="px-6 py-12 text-center">
-            <p className="font-bold text-slate-700">Belum ada koreksi yang menunggu</p>
-            <p className="mt-1 text-sm text-slate-500">Pengajuan karyawan akan muncul di bagian ini.</p>
-          </div>}
-        </section>
+        <AttendanceApprovals timezone={timezone} />
 
         <section className="grid gap-6 xl:grid-cols-[1fr_0.7fr]">
           <div className="surface overflow-hidden">
             <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
-              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Kelola karyawan</h2>
+              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Kelola akun pegawai dan HR</h2>
             </div>
             <div className="divide-y divide-slate-100">
               {employees.map((employee) => <article key={employee.id} className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto] lg:items-center">
                 <div>
                   <p className="font-bold text-slate-900">{employee.name}</p>
+                  <p className="mt-1 text-sm font-medium text-[#0868D7]">{employee.role === "HR" ? "HR · Verifikasi koreksi" : "Pegawai"}</p>
                   <p className="mt-1 text-sm text-slate-500">@{employee.username} · {employee.position}</p>
                   <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-bold ${employee.isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{employee.isActive ? "Aktif" : "Nonaktif"}</span>
                 </div>
                 <div className="grid min-w-0 gap-2 lg:min-w-[430px]">
-                  <EmployeeEditor employee={{ id: employee.id, name: employee.name, username: employee.username, position: employee.position }} />
+                  <EmployeeEditor employee={{ id: employee.id, name: employee.name, username: employee.username, position: employee.position, role: employee.role }} />
                   <div className="grid gap-2 sm:grid-cols-[minmax(150px,1fr)_auto]">
                   <form action={resetEmployeePasswordAction} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <input type="hidden" name="userId" value={employee.id} />
@@ -182,7 +155,7 @@ export default async function AdminPage() {
           </div>
           <div className="grid content-start gap-6">
             <aside className="surface p-5 sm:p-6">
-              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Tambah karyawan</h2>
+              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Tambah akun pegawai atau HR</h2>
               <p className="mb-6 mt-2 text-sm leading-6 text-slate-500">Buat username dan password awal yang nantinya dapat diganti oleh pengguna.</p>
               <EmployeeForm />
             </aside>
