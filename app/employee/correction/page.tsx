@@ -4,11 +4,14 @@ import { requireUser } from "@/lib/auth";
 import { dateTimeLocalValue, formatDateTime } from "@/lib/date";
 import { db } from "@/lib/db";
 import { AttendanceCorrectionRequest } from "../attendance-control";
+import { isCorrectionWithinWindow } from "@/lib/correction-window";
 
 export default async function EmployeeCorrectionPage() {
   const user = await requireUser("EMPLOYEE");
   const settings = await db.appSetting.findUnique({ where: { id: 1 } });
   const timezone = settings?.timezone ?? "Asia/Singapore";
+  const limitDays = settings?.correctionLimitDays ?? null;
+  const now = new Date();
   const [unresolved, pendingCorrections] = await Promise.all([
     db.attendanceSession.findMany({
       where: { employeeId: user.id, status: { in: ["OPEN", "INCOMPLETE"] } },
@@ -17,9 +20,11 @@ export default async function EmployeeCorrectionPage() {
     }),
     db.clockOutRequest.count({ where: { status: "PENDING", attendanceSession: { employeeId: user.id } } }),
   ]);
-  const sessions = unresolved
-    .filter((session) => !session.correctionRequests.length)
+  const available = unresolved.filter((session) => !session.correctionRequests.length);
+  const sessions = available
+    .filter((session) => isCorrectionWithinWindow(session.clockInAt, limitDays, timezone, now))
     .map((session) => ({ id: session.id, label: `Clock in ${formatDateTime(session.clockInAt, timezone)}` }));
+  const expiredCount = available.length - sessions.length;
 
   return <main id="main-content" className="mx-auto grid max-w-2xl gap-5 px-4 py-5 pb-28 sm:px-6 lg:px-8 lg:py-10">
     <section>
@@ -33,6 +38,10 @@ export default async function EmployeeCorrectionPage() {
       <p className="mt-3 text-sm leading-6 text-slate-600">Gunakan jika lupa clock in atau clock out. Sesi yang belum diakhiri saat pergantian hari tidak dihitung. Durasi masuk rekap setelah koreksi disetujui Admin/HR.</p>
     </section>
     {pendingCorrections ? <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">{pendingCorrections} koreksi sedang menunggu verifikasi Admin/HR. Anda tetap dapat memulai sesi hari berikutnya.</p> : null}
+    <div className="grid gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950" aria-label="Ketentuan batas pengajuan">
+      <p>{limitDays === null ? "Pengajuan lupa absensi tidak dibatasi jumlah hari." : `Pengajuan maksimal ${limitDays} hari kalender setelah tanggal clock in, sampai akhir hari dalam zona ${timezone}. Berlaku untuk lupa clock in dan clock out.`}</p>
+      {expiredCount ? <p>{expiredCount} sesi sudah melewati batas pengajuan dan tidak dapat dipilih. Hubungi Admin/HR jika perlu ditinjau.</p> : null}
+    </div>
     <section className="surface p-5 sm:p-6">
       <AttendanceCorrectionRequest
         sessions={sessions}

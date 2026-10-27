@@ -10,7 +10,7 @@ import { attendanceStatusLabel } from "@/lib/attendance";
 import { businessDate, formatDateTime, formatMinutes } from "@/lib/date";
 import { db } from "@/lib/db";
 import { LocationForm } from "./location-form";
-import { EmployeeEditor, EmployeeForm, TimezoneForm } from "./admin-forms";
+import { CorrectionLimitForm, EmployeeEditor, EmployeeForm, TimezoneForm } from "./admin-forms";
 import { deleteEvidenceAction, deleteLocationAction, resetEmployeePasswordAction, toggleEmployeeAction, toggleLocationAction } from "./actions";
 
 export default async function AdminPage() {
@@ -163,6 +163,11 @@ export default async function AdminPage() {
               <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Pengaturan waktu</h2>
               <p className="mb-6 mt-2 text-sm leading-6 text-slate-500">Zona waktu dipakai untuk menentukan tanggal bisnis dan tampilan jam.</p>
               <TimezoneForm current={timezone} />
+            </aside>
+            <aside className="surface p-5 sm:p-6">
+              <h2 className="font-[family-name:var(--font-heading)] text-lg font-bold text-[#2B3C5A]">Batas pengajuan koreksi</h2>
+              <p className="mb-4 mt-2 text-sm leading-6 text-slate-600">Atur sampai kapan pegawai dapat mengajukan lupa absensi.</p>
+              <CorrectionLimitForm current={settings?.correctionLimitDays ?? null} />
             </aside>
           </div>
         </section>

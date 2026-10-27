@@ -1,9 +1,9 @@
 "use client";
 
 import { PencilSimple, SlidersHorizontal, Trash, UserPlus } from "@phosphor-icons/react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
-import { createEmployeeAction, deleteEmployeeAction, updateEmployeeAction, updateTimezoneAction, type AdminFormState } from "./actions";
+import { createEmployeeAction, deleteEmployeeAction, updateEmployeeAction, updateTimezoneAction, updateCorrectionLimitAction, type AdminFormState } from "./actions";
 
 const initialState: AdminFormState = { ok: false, message: "" };
 
@@ -65,5 +65,26 @@ export function TimezoneForm({ current }: { current: string }) {
     <p className="text-sm leading-6 text-slate-500">Contoh: Asia/Singapore, Asia/Makassar, atau Asia/Jakarta.</p>
     <Message state={state} />
     <button className="button-secondary" disabled={pending}><SlidersHorizontal size={20} aria-hidden="true" />{pending ? "Menyimpan..." : "Simpan zona waktu"}</button>
+  </form>;
+}
+
+export function CorrectionLimitForm({ current }: { current: number | null }) {
+  const [state, action, pending] = useActionState(updateCorrectionLimitAction, initialState);
+  const [enabled, setEnabled] = useState(current !== null);
+  return <form action={action} onReset={(event) => event.preventDefault()} className="grid gap-4" aria-label="Pengaturan batas pengajuan koreksi">
+    <label className="flex min-h-12 cursor-pointer items-center gap-3 text-sm font-bold text-slate-700">
+      <input name="limitEnabled" type="checkbox" checked={enabled} disabled={pending} onChange={(event) => setEnabled(event.target.checked)} className="size-5 shrink-0 accent-blue-600 disabled:cursor-not-allowed" />
+      Batasi waktu pengajuan
+    </label>
+    <label htmlFor="correction-limit-days" className="grid gap-2 text-sm font-bold text-slate-700">
+      Maksimal hari setelah tanggal clock in
+      <input id="correction-limit-days" name="correctionLimitDays" type="number" inputMode="numeric" min={1} max={2_147_483_647} step={1} required={enabled} disabled={!enabled || pending} defaultValue={current ?? 3} aria-describedby="correction-limit-help correction-limit-result" aria-invalid={Boolean(state.message && !state.ok)} className="field font-normal disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500" />
+    </label>
+    <div id="correction-limit-help" className="grid gap-2 text-sm leading-6 text-slate-600">
+      <p>{enabled ? "Dihitung per hari kalender dalam zona waktu perusahaan. Batas 1 hari: absensi kemarin masih dapat diajukan sampai akhir hari ini." : "Nonaktif: pegawai dapat mengajukan koreksi tanpa batas usia absensi."}</p>
+      <p>Berlaku untuk lupa clock in dan clock out. Pengajuan yang sudah terkirim tetap dapat ditinjau Admin/HR.</p>
+    </div>
+    <div id="correction-limit-result"><Message state={state} /></div>
+    <button className="button-secondary" disabled={pending}>{pending ? "Menyimpan..." : "Simpan batas pengajuan"}</button>
   </form>;
 }

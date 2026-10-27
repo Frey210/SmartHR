@@ -181,6 +181,25 @@ export async function updateTimezoneAction(_: AdminFormState, formData: FormData
   return { ok: true, message: "Zona waktu berhasil diperbarui." };
 }
 
+export async function updateCorrectionLimitAction(_: AdminFormState, formData: FormData): Promise<AdminFormState> {
+  const admin = await requireUser("ADMIN");
+  const correctionLimitDays = formData.get("limitEnabled") === "on" ? Number(formData.get("correctionLimitDays")) : null;
+  if (correctionLimitDays !== null && (!Number.isInteger(correctionLimitDays) || correctionLimitDays < 1 || correctionLimitDays > 2_147_483_647)) {
+    return { ok: false, message: "Isi jumlah hari dengan bilangan bulat minimal 1." };
+  }
+  await db.$transaction([
+    db.appSetting.upsert({
+      where: { id: 1 },
+      update: { correctionLimitDays, updatedBy: admin.id },
+      create: { id: 1, correctionLimitDays, updatedBy: admin.id },
+    }),
+    db.auditLog.create({ data: { actorId: admin.id, action: "CORRECTION_LIMIT_UPDATED", entityType: "AppSetting", entityId: "1", details: JSON.stringify({ correctionLimitDays }) } }),
+  ]);
+  revalidatePath("/admin");
+  revalidatePath("/employee/correction");
+  return { ok: true, message: correctionLimitDays === null ? "Batas pengajuan dinonaktifkan." : `Batas pengajuan disimpan: ${correctionLimitDays} hari kalender setelah tanggal clock in.` };
+}
+
 export async function toggleLocationAction(formData: FormData) {
   const admin = await requireUser("ADMIN");
   const locationId = String(formData.get("locationId") ?? "");

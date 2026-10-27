@@ -23,6 +23,7 @@ const labels: Record<string, string> = {
   LOCATION_ACTIVATED: "Lokasi diaktifkan",
   LOCATION_DEACTIVATED: "Lokasi dinonaktifkan",
   TIMEZONE_UPDATED: "Zona waktu diubah",
+  CORRECTION_LIMIT_UPDATED: "Batas pengajuan koreksi diubah",
   EVIDENCE_DELETED: "Foto bukti dihapus",
 };
 

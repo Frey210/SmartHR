@@ -12,6 +12,7 @@ import { writeAudit } from "@/lib/audit";
 import { imageExtension, matchesImageMime } from "@/lib/image";
 import { evidenceDescriptions } from "@/lib/evidence";
 import { expireAttendanceSessions } from "@/lib/attendance-cutoff";
+import { isCorrectionWithinWindow } from "@/lib/correction-window";
 
 type ClockInInput = { latitude: number; longitude: number; accuracyM: number };
 export type AttendanceActionResult = { ok: boolean; message: string };
@@ -191,8 +192,6 @@ export async function requestAttendanceCorrectionAction(formData: FormData): Pro
   if (!reason) return { ok: false, message: "Alasan koreksi wajib diisi." };
   if (Number.isNaN(requestedClockOutAt.getTime())) return { ok: false, message: "Waktu clock out tidak valid." };
   if (requestType === "MISSING_SESSION" && Number.isNaN(requestedClockInAt.getTime())) return { ok: false, message: "Waktu clock in tidak valid." };
-  const evidence = await prepareEvidence(formData);
-  if (evidence.error) return { ok: false, message: evidence.error };
   if (requestedClockOutAt > new Date()) return { ok: false, message: "Waktu koreksi tidak boleh melebihi waktu sekarang." };
 
   const sessionId = requestType === "CLOCK_OUT" ? String(formData.get("attendanceSessionId") ?? "") : randomUUID();
@@ -204,17 +203,24 @@ export async function requestAttendanceCorrectionAction(formData: FormData): Pro
   if (session?.correctionRequests.length) return { ok: false, message: "Permintaan sebelumnya masih menunggu verifikasi Admin/HR." };
   const effectiveClockIn = session?.clockInAt ?? requestedClockInAt;
   if (requestedClockOutAt <= effectiveClockIn) return { ok: false, message: "Waktu clock out harus setelah clock in." };
+  const settings = await db.appSetting.findUnique({ where: { id: 1 } });
+  const timezone = settings?.timezone ?? "Asia/Singapore";
+  const limitDays = settings?.correctionLimitDays ?? null;
+  if (!isCorrectionWithinWindow(effectiveClockIn, limitDays, timezone)) {
+    return { ok: false, message: `Batas pengajuan maksimal ${limitDays} hari setelah tanggal clock in sudah lewat. Hubungi Admin/HR.` };
+  }
+  const evidence = await prepareEvidence(formData);
+  if (evidence.error) return { ok: false, message: evidence.error };
 
   const saved: { objectKey: string; originalFilename: string; mimeType: string; sizeBytes: number; description: string }[] = [];
   const requestId = randomUUID();
   try {
     saved.push(...await storeEvidence(sessionId, evidence.files));
-    const settings = requestType === "MISSING_SESSION" ? await db.appSetting.findUnique({ where: { id: 1 } }) : null;
     await db.$transaction([
       ...(requestType === "MISSING_SESSION" ? [db.attendanceSession.create({ data: {
         id: sessionId,
         employeeId: user.id,
-        businessDate: businessDate(settings?.timezone ?? "Asia/Singapore", requestedClockInAt),
+        businessDate: businessDate(timezone, requestedClockInAt),
         status: "PENDING",
         clockInAt: requestedClockInAt,
         clockOutAt: requestedClockOutAt,

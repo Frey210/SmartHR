@@ -11,5 +11,7 @@ database.exec(readFileSync(migrationPath, "utf8"));
 const requestColumns = new Set(database.prepare(`PRAGMA table_info("ClockOutRequest")`).all().map((column) => column.name));
 if (!requestColumns.has("requestType")) database.exec(`ALTER TABLE "ClockOutRequest" ADD COLUMN "requestType" TEXT NOT NULL DEFAULT 'CLOCK_OUT'`);
 if (!requestColumns.has("requestedClockInAt")) database.exec(`ALTER TABLE "ClockOutRequest" ADD COLUMN "requestedClockInAt" DATETIME`);
+const settingColumns = new Set(database.prepare(`PRAGMA table_info("AppSetting")`).all().map((column) => column.name));
+if (!settingColumns.has("correctionLimitDays")) database.exec(`ALTER TABLE "AppSetting" ADD COLUMN "correctionLimitDays" INTEGER CHECK ("correctionLimitDays" > 0)`);
 database.close();
 console.log(`Database ready: ${databasePath}`);

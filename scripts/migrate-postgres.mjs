@@ -18,6 +18,8 @@ try {
   }
   const corrections = readFileSync(fileURLToPath(new URL("../prisma/postgresql/0002_attendance_corrections.sql", import.meta.url)), "utf8");
   await client.query(corrections);
+  const correctionLimit = readFileSync(fileURLToPath(new URL("../prisma/postgresql/0003_correction_limit.sql", import.meta.url)), "utf8");
+  await client.query(correctionLimit);
   console.log("PostgreSQL schema ready");
 } catch (error) {
   await client.query("ROLLBACK").catch(() => undefined);

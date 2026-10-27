@@ -114,6 +114,7 @@ model ClockOutRequest {
 model AppSetting {
   id        Int      @id @default(1)
   timezone  String   @default("Asia/Singapore")
+  correctionLimitDays Int?
   updatedBy String?
   updatedAt DateTime @updatedAt
 }

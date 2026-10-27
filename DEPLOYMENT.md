@@ -42,7 +42,15 @@ docker compose --env-file .env.production -f docker-compose.production.yml up -d
 - Changing an account's role revokes its existing login sessions. Review decisions record the reviewer ID and audit event; approved HR corrections use `HR_APPROVED` as the clock-out source.
 - At midnight in the configured company timezone, unfinished attendance is excluded from counted hours. Live timers reset and refresh the page. The next authenticated request marks old `OPEN` sessions `INCOMPLETE` with `durationMinutes = null`, including sessions already open before this release. No scheduled task is required for the calculation rule.
 - Employees can start a new day's session while older sessions await correction. Only an approved correction restores the old session's duration. Deliberate overnight work must also use the correction flow.
-- This release needs no schema migration for HR because roles are stored as text. Already `CLOSED` historical sessions are preserved; inaccurate old completed records require individual review.
+- HR roles are stored as text. Already `CLOSED` historical sessions are preserved; inaccurate old completed records require individual review.
+
+## Correction submission deadline
+
+- Admin configures the deadline under **Batas pengajuan koreksi**. The default is disabled (`AppSetting.correctionLimitDays = NULL`). Enable it with any positive integer number of days; HR and employees cannot change this setting.
+- The limit uses calendar days after the clock-in date in the company timezone. With a 1-day limit, Monday attendance can be submitted through Tuesday 23:59:59. With a 3-day limit, it can be submitted through Thursday 23:59:59.
+- For a forgotten clock out, the original session's clock-in date controls eligibility. For a missing session, the requested clock-in date controls eligibility. Moving the proposed clock-out time does not extend the deadline.
+- Only new submissions are restricted. Pending submissions remain reviewable even after the deadline or a policy change. Disabled limits allow older submissions again.
+- PostgreSQL migration `0003_correction_limit.sql` adds one nullable setting without modifying attendance or prior requests. Run the updated migration command before starting the new application image. SQLite development initialization also adds this column to existing databases.
 
 ## Backup and restore
 

@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS "ClockOutRequest" (
 CREATE TABLE IF NOT EXISTS "AppSetting" (
   "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
   "timezone" TEXT NOT NULL DEFAULT 'Asia/Singapore',
+  "correctionLimitDays" INTEGER CHECK ("correctionLimitDays" > 0),
   "updatedBy" TEXT,
   "updatedAt" DATETIME NOT NULL
 );
