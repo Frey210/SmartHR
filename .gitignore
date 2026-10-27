@@ -12,3 +12,6 @@ graphify-out/
 Gemini_Generated_Image_*.jpg
 mtc logo.jpg
 npm-debug.log*
+.impeccable/review/
+.playwright-cli/
+Slip_Gaji_Otomatis_Format_Asli_MTC.xlsx

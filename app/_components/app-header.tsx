@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckSquareOffset, ClockCounterClockwise, ListMagnifyingGlass, ShieldCheck, SignOut, UserCircle } from "@phosphor-icons/react/dist/ssr";
+import { CheckSquareOffset, ClockCounterClockwise, ListMagnifyingGlass, Receipt, ShieldCheck, SignOut, UserCircle } from "@phosphor-icons/react/dist/ssr";
 import { logoutAction } from "@/app/actions";
 import { EmployeeMobileNav } from "@/app/_components/employee-mobile-nav";
 import { canReviewAttendance, roleHome, type UserRole } from "@/lib/roles";
@@ -34,7 +34,9 @@ export function AppHeader({ name, position, role }: AppHeaderProps) {
             <SignOut size={22} weight="bold" aria-hidden="true" />
           </button>
         </form> : null}
-        <nav className={`order-3 w-full gap-2 lg:order-none lg:flex lg:w-auto ${role === "ADMIN" ? "grid grid-cols-3 sm:grid-cols-5" : role === "HR" ? "grid grid-cols-3" : "hidden"}`} aria-label="Navigasi akun">
+        <nav className={`order-3 w-full gap-2 lg:order-none lg:flex lg:w-auto ${role === "ADMIN" ? "grid grid-cols-3 sm:grid-cols-4" : role === "HR" ? "grid grid-cols-3" : "hidden"}`} aria-label="Navigasi akun">
+          {canReviewAttendance(role) ? <Link href="/payroll" className="button-secondary px-3"><Receipt size={20} aria-hidden="true" /><span className="text-xs sm:text-sm">Payroll</span></Link> : null}
+          <Link href="/payslips" className="button-secondary px-3"><Receipt size={20} aria-hidden="true" /><span className="text-xs sm:text-sm">Slip saya</span></Link>
           {role === "ADMIN" ? <Link href="/admin/records" className="button-secondary px-3" aria-label="Buka rekap absensi">
             <ListMagnifyingGlass size={20} weight="bold" aria-hidden="true" />
             <span className="text-xs sm:text-sm">Rekap</span>

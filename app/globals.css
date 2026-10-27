@@ -358,6 +358,18 @@ button:disabled {
   font-variant-numeric: tabular-nums;
 }
 
+@media print {
+  @page { size: A4; margin: 14mm; }
+  .payslip-print-page .no-print,
+  .payslip-print-page nav { display: none !important; }
+  .payslip-print-page main { max-width: none; padding: 0; margin: 0; }
+  .payslip-print-page .payslip-document { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: white; }
+  .payslip-print-page .payslip-columns { grid-template-columns: 0.9fr 1.1fr; gap: 24px; }
+  .payslip-print-page .payslip-document { font-size: 12px; break-inside: avoid; }
+  .payslip-print-page .payslip-document header { position: static; }
+  body:has(.payslip-print-page) { background: white; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

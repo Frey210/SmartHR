@@ -24,6 +24,12 @@ const labels: Record<string, string> = {
   LOCATION_DEACTIVATED: "Lokasi dinonaktifkan",
   TIMEZONE_UPDATED: "Zona waktu diubah",
   CORRECTION_LIMIT_UPDATED: "Batas pengajuan koreksi diubah",
+  PAYROLL_SETTINGS_UPDATED: "Aturan payroll diubah",
+  PAYROLL_PROFILE_UPDATED: "Profil gaji diubah",
+  PAYROLL_DRAFTS_GENERATED: "Draft slip gaji dibuat",
+  PAYSLIP_UPDATED: "Komponen slip gaji diubah",
+  PAYSLIP_RECALCULATED: "Absensi slip gaji dihitung ulang",
+  PAYSLIP_PUBLISHED: "Slip gaji disetujui dan diterbitkan",
   EVIDENCE_DELETED: "Foto bukti dihapus",
 };
 

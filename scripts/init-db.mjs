@@ -13,5 +13,6 @@ if (!requestColumns.has("requestType")) database.exec(`ALTER TABLE "ClockOutRequ
 if (!requestColumns.has("requestedClockInAt")) database.exec(`ALTER TABLE "ClockOutRequest" ADD COLUMN "requestedClockInAt" DATETIME`);
 const settingColumns = new Set(database.prepare(`PRAGMA table_info("AppSetting")`).all().map((column) => column.name));
 if (!settingColumns.has("correctionLimitDays")) database.exec(`ALTER TABLE "AppSetting" ADD COLUMN "correctionLimitDays" INTEGER CHECK ("correctionLimitDays" > 0)`);
+database.exec(readFileSync(fileURLToPath(new URL("../prisma/postgresql/0004_payroll.sql", import.meta.url)), "utf8"));
 database.close();
 console.log(`Database ready: ${databasePath}`);

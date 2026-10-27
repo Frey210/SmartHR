@@ -20,6 +20,7 @@ try {
   await client.query(corrections);
   const correctionLimit = readFileSync(fileURLToPath(new URL("../prisma/postgresql/0003_correction_limit.sql", import.meta.url)), "utf8");
   await client.query(correctionLimit);
+  await client.query(readFileSync(fileURLToPath(new URL("../prisma/postgresql/0004_payroll.sql", import.meta.url)), "utf8"));
   console.log("PostgreSQL schema ready");
 } catch (error) {
   await client.query("ROLLBACK").catch(() => undefined);

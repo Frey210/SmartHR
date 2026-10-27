@@ -17,6 +17,8 @@ model User {
   isActive     Boolean             @default(true)
   sessions     AuthSession[]
   attendances  AttendanceSession[]
+  payrollProfile PayrollProfile?
+  payslips Payslip[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 }
@@ -130,4 +132,70 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([action])
+}
+
+model PayrollSetting {
+  id Int @id @default(1)
+  periodStartDay Int @default(25)
+  payday Int @default(25)
+  minutesPerDay Int @default(300)
+  signerName String @default("")
+  signerPosition String @default("")
+  city String @default("Makassar")
+  updatedAt DateTime @updatedAt
+}
+
+model PayrollProfile {
+  employeeId String @id
+  employee User @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  baseSalary Int
+  communicationAllowance Int
+  transportRate Int
+  maxPaidDays Int
+  nationalId String @default("")
+  taxStatus String @default("TK/0")
+  updatedAt DateTime @updatedAt
+}
+
+model PayrollPeriod {
+  id String @id @default(cuid())
+  key String @unique
+  startDate String
+  endDate String
+  payDate String
+  timezone String
+  minutesPerDay Int
+  signerName String
+  signerPosition String
+  city String
+  createdBy String
+  createdAt DateTime @default(now())
+  payslips Payslip[]
+}
+
+model Payslip {
+  id String @id @default(cuid())
+  periodId String
+  period PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  employeeId String
+  employee User @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  profileSnapshot String
+  attendanceSnapshot String
+  adjustments String
+  totalMinutes Int
+  earnedDays Int
+  paidDays Int
+  remainderMinutes Int
+  excludedCount Int
+  grossPay Int
+  netPay Int
+  status String @default("DRAFT")
+  version Int @default(1)
+  publishedBy String?
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([periodId, employeeId])
+  @@index([employeeId, status])
 }

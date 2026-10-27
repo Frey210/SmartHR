@@ -52,6 +52,17 @@ docker compose --env-file .env.production -f docker-compose.production.yml up -d
 - Only new submissions are restricted. Pending submissions remain reviewable even after the deadline or a policy change. Disabled limits allow older submissions again.
 - PostgreSQL migration `0003_correction_limit.sql` adds one nullable setting without modifying attendance or prior requests. Run the updated migration command before starting the new application image. SQLite development initialization also adds this column to existing databases.
 
+## Payroll and private payslips
+
+- Migration `0004_payroll.sql` adds payroll settings, employee profiles, periods, and payslips. It does not import the private Excel workbook or publish any slips. Apply migrations before starting the updated image.
+- Admin opens **Payroll → Pengaturan payroll**, sets the cycle (default previous month 25 through current month 24; payday 25), minutes per equivalent day (default 300), and signatory. Configure each employee's fixed base salary, fixed communication allowance, transport rate, and maximum paid days. Accounts without a profile are skipped and shown in a warning.
+- All valid `CLOSED` session minutes in the period are pooled. Whole equivalent days = floor(total minutes / configured minutes); paid days are capped per employee. Transport = paid days × daily rate. Remaining minutes are displayed and never carried forward. Open/incomplete sessions do not contribute; approve attendance corrections before final review.
+- Admin or HR creates drafts, reviews each slip, and fills KPI, overtime, position allowance, THR, PPh 21, other deductions, and absence counters as needed. Tax and leave counters are manual, following the workbook; generation is not a tax calculation or bank transfer.
+- Existing periods retain their dates, company timezone, conversion, and signatory. Existing drafts are never overwritten by generation. Changed cutoffs cannot create overlapping periods. Refresh recalculates attendance; Admin refresh also loads the latest employee salary profile, while HR refresh preserves the salary profile snapshot. Manual adjustments remain.
+- Publication requires explicit review and a completed attendance period. Changed source attendance blocks publication until recalculated. Concurrent changes use version checks. Published slips are immutable snapshots; subsequent attendance or salary changes do not silently alter them.
+- Employees use **Slip gaji / Slip saya** and can access only their own published documents. HR/Admin can review drafts. Use **Cetak / Simpan PDF** for the A4 print layout. Payroll access and mutations require authentication and role checks; changes are audited.
+- The source workbook contains private compensation data. Keep it out of Git, screenshots, and public assets. Production deployment leaves payroll unconfigured until Admin enters the approved amounts.
+
 ## Backup and restore
 
 Run database backups on LXC 102 using a restricted `.pgpass` file:
